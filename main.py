@@ -21,7 +21,6 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
         robot_angle -= 0.1
@@ -34,14 +33,11 @@ while running:
         robot_x -= math.sin(robot_angle) * robot_speed
         robot_y += math.cos(robot_angle) * robot_speed
 
-
     window.fill((255, 255, 255))
-
 
     pygame.draw.circle(window, (0, 0, 255), (int(robot_x), int(robot_y)), 20)
     pygame.draw.line(window, (255, 0, 0), (robot_x, robot_y),
                      (robot_x + math.sin(robot_angle) * 30, robot_y - math.cos(robot_angle) * 30), 3)
-
 
     pygame.display.flip()
 
