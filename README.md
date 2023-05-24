@@ -1,5 +1,5 @@
 # AppliedComputerScience-EngineeringThesis
-Part of Engineering Thesis
+Engineering Thesis
 
 Topic:  
 - eng: "Designing the architecture of a robot simulator software focused on optimization and intelligent navigation." 
