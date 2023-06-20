@@ -26,25 +26,32 @@ class Robot(pygame.sprite.Sprite):
         self.speed_x = 0
         self.speed_y = 0
         self.kolka = pygame.sprite.Group()
+        self.path = [(self.rect.x, self.rect.y), (200, 300), (600, 400)]
+        self.current_point = 0
 
     def update(self):
-        self.speed_x = 0
-        self.speed_y = 0
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            self.speed_x = -5
-        if keys[pygame.K_RIGHT]:
-            self.speed_x = 5
-        if keys[pygame.K_UP]:
-            self.speed_y = -5
-        if keys[pygame.K_DOWN]:
-            self.speed_y = 5
+        target_x, target_y = self.path[self.current_point]
+        dx = target_x - self.rect.x
+        dy = target_y - self.rect.y
+
+        if dx != 0:
+            self.speed_x = dx / abs(dx) * 5
+        else:
+            self.speed_x = 0
+
+        if dy != 0:
+            self.speed_y = dy / abs(dy) * 5
+        else:
+            self.speed_y = 0
+
         self.rect.x += self.speed_x
         self.rect.y += self.speed_y
-        self.rect.x = max(0, min(self.rect.x, WIDTH - self.rect.width))
-        self.rect.y = max(0, min(self.rect.y, HEIGHT - self.rect.height))
 
-        # Generowanie białych kółek
+        if abs(dx) < 5 and abs(dy) < 5:
+            self.current_point += 1
+            if self.current_point >= len(self.path):
+                self.current_point = 0
+
         if self.speed_x != 0 or self.speed_y != 0:
             kolko = Circle(self.rect.x, self.rect.y)
             self.kolka.add(kolko)
