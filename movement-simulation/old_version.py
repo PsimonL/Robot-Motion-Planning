@@ -112,9 +112,9 @@ def main():
 
         all_sprites.update()
 
-        if pygame.sprite.spritecollide(robot, obstacles, False):
-            robot.rect.x -= robot.diff_x
-            robot.rect.y -= robot.diff_y
+        # if pygame.sprite.spritecollide(robot, obstacles, False):
+        #     robot.rect.x -= robot.diff_x
+        #     robot.rect.y -= robot.diff_y
 
         screen.fill(BLACK)
         all_sprites.draw(screen)
