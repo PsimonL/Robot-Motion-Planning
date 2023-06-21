@@ -5,9 +5,11 @@ pygame.init()
 
 WIDTH = 500
 HEIGHT = 500
-FPS = 60
+FPS = 1000
 
 WHITE = (255, 255, 255)
+YELLOW = (255, 255, 0)
+GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
@@ -27,27 +29,28 @@ class Robot(pygame.sprite.Sprite):
         self.diff_x = 0
         self.diff_y = 0
         self.circles = pygame.sprite.Group()
-        self.path = [(self.rect.x, self.rect.y), (250, 250), (250, 400)]
-        self.current_point = 0
+        # self.path = [(self.rect.x, self.rect.y), (10, 250), (10, 400), (250, 400), (350, 400)]
+        # self.path = [(self.rect.x, self.rect.y), (250, 250), (250, 400), (450, 400)]
+        self.path = [(self.rect.x, self.rect.y), (10, 10), (200, 10), (200, 250), (150, 200)]
+        # self.path = [(self.rect.x, self.rect.y), (450, 450), (50, 450), (150, 150)]
+        # self.path = [(self.rect.x, self.rect.y), (100, 100), (200, 200), (300, 300), (400, 400)]
+        self.iterator = 0
 
     def update(self):
-        target_x, target_y = self.path[self.current_point]
-        # print(self.rect.x)
-        # print(self.rect.y)
-        # print(target_x)
-        # print(target_y)
+        target_x, target_y = self.path[self.iterator]
+        # print(f"(rect.x, rect.y) = ({self.rect.x}, {self.rect.y})")
+        # print(f"(target_x, target_y) = ({target_x}, {target_y})")
         dx = target_x - self.rect.x
         dy = target_y - self.rect.y
-        print(dx)
-        print(dy)
+        print(f"(dx, dy) = ({dx-25}, {dy-25})")
 
         if dx != 0:
-            self.diff_x = dx / abs(dx) * 5
+            self.diff_x = dx / abs(dx) * 1
         else:
             self.diff_x = 0
 
         if dy != 0:
-            self.diff_y = dy / abs(dy) * 5
+            self.diff_y = dy / abs(dy) * 1
         else:
             self.diff_y = 0
 
@@ -55,17 +58,18 @@ class Robot(pygame.sprite.Sprite):
         self.rect.y += self.diff_y
 
         if abs(dx) < 5 and abs(dy) < 5:
-            self.current_point += 1
-            if self.current_point >= len(self.path):
-                self.current_point = 0
+            self.iterator += 1
+            if self.iterator >= len(self.path):
+                self.iterator = 0
                 self.path = self.path[::-1]
 
         if self.diff_x != 0 or self.diff_y != 0:
             circle = Circle(self.rect.x, self.rect.y)
+
             self.circles.add(circle)
 
-    def draw(self, screen):
-        pygame.draw.rect(screen, WHITE, self.rect)
+    # def draw(self, screen):
+    #     pygame.draw.rect(screen, WHITE, self.rect)
 
 
 class Obstacle(pygame.sprite.Sprite):
