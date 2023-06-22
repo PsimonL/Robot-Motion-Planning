@@ -1,71 +1,88 @@
 import pygame
 
-pygame.init()
 
-SCREEN_WIDTH = 500
-SCREEN_HEIGHT = 500
-FPS = 60
+class RobotSimulation:
+    def __init__(self):
+        pygame.init()
 
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
+        self.SCREEN_WIDTH = 500
+        self.SCREEN_HEIGHT = 500
+        self.FPS = 60
 
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Automatic robot simulation")
-clock = pygame.time.Clock()
+        self.WHITE = (255, 255, 255)
+        self.BLACK = (0, 0, 0)
+        self.RED = (255, 0, 0)
+        self.BLUE = (0, 0, 255)
+        self.YELLOW = (255, 255, 0)
 
-robot = pygame.Rect((250, 250, 25, 25))
+        self.start_x, self.start_y = 10, 10
 
-path = [(10, 10), (200, 10), (200, 250), (100, 250)]
-iterator = 0
-finished_path = False
-trail_points = []
+        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        pygame.display.set_caption("Automatic robot simulation")
+        self.clock = pygame.time.Clock()
 
-def move_robot(robot):
-    global iterator, finished_path
-    if path:
-        if not finished_path:
-            target_x, target_y = path[iterator]
-            dx = target_x - robot.x
-            dy = target_y - robot.y
-            speed = 2
+        self.robot = pygame.Rect((self.start_x, self.start_y, 25, 25))
 
-            if dx != 0:
-                robot.x += speed if dx > 0 else -speed
+        self.path = [(self.start_x, self.start_y), (200, 10), (200, 250), (100, 250), (100, 300), (300, 300),
+                     (300, 450), (10, 450)]
+        self.iterator = 0
+        self.finished_path = False
+        self.trail_points = []
 
-            if dy != 0:
-                robot.y += speed if dy > 0 else -speed
+    def move_robot(self):
+        if self.path:
+            if not self.finished_path:
+                target_x, target_y = self.path[self.iterator]
+                dx = target_x - self.robot.x
+                dy = target_y - self.robot.y
+                speed = 2
 
-            if abs(dx) == 0 and abs(dy) == 0:
-                iterator += 1
-                if iterator >= len(path):
-                    iterator = 0
-                    finished_path = True
+                if dx != 0:
+                    self.robot.x += speed if dx > 0 else -speed
 
-            # dodawanie punktu do śladu
-            trail_points.append((robot.x + robot.width / 2, robot.y + robot.height / 2))
+                if dy != 0:
+                    self.robot.y += speed if dy > 0 else -speed
 
-    else:
-        raise Exception("Empty 'path'")
+                if abs(dx) == 0 and abs(dy) == 0:
+                    print(self.iterator)
+                    self.iterator += 1
+                    if self.iterator >= len(self.path):
+                        self.iterator = 0
+                        # self.finished_path = True
+                        print(self.path)
+                        self.path = self.path[::-1]
+                        print(self.path)
 
-def main():
-    runner = True
-    while runner:
-        clock.tick(FPS)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                runner = False
-        move_robot(robot)
-        screen.fill(BLACK)
-        pygame.draw.rect(screen, RED, robot)
+                    # Dodawanie żółtego kółka w punkcie, przez który przechodzi robot
+                    self.trail_points.append((target_x, target_y))
 
-        if len(trail_points) > 1:
-            pygame.draw.lines(screen, WHITE, False, trail_points, 1)
+                # Dodawanie punktu do śladu
+                self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
 
-        pygame.display.update()
-    pygame.quit()
+        else:
+            raise Exception("Empty 'path'")
+
+    def main(self):
+        runner = True
+        while runner:
+            self.clock.tick(self.FPS)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    runner = False
+            self.move_robot()
+            self.screen.fill(self.BLACK)
+            pygame.draw.rect(self.screen, self.RED, self.robot)
+
+            for point in self.path:
+                pygame.draw.circle(self.screen, self.YELLOW, point, 5)
+
+            if len(self.trail_points) > 1:
+                pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
+
+            pygame.display.update()
+        pygame.quit()
 
 
 if __name__ == '__main__':
-    main()
+    simulation = RobotSimulation()
+    simulation.main()
