@@ -1,5 +1,13 @@
 import pygame
 
+def cross_product(X, Y, Z):
+    x1, y1 = Z[0] - X[0], Z[1] - X[1]
+    x2, y2 = Y[0] - X[0], Y[1] - X[1]
+    return x1 * y2 - x2 * y1
+
+
+def between(X, Y, Z):
+    return min(X[0], Y[0]) <= Z[0] <= max(X[0], Y[0]) and min(X[1], Y[1]) <= Z[1] <= max(X[1], Y[1])
 
 class RobotSimulation:
     def __init__(self):

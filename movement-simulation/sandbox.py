@@ -14,6 +14,12 @@ class RobotSimulation:
         self.RED = (255, 0, 0)
         self.BLUE = (0, 0, 255)
         self.YELLOW = (255, 255, 0)
+        self.GREEN = (0, 255, 0)
+        self.FUCHSIA = (255, 0, 255)
+        self.GOLD = (255, 215, 0)
+        self.ORANGE = (255, 165, 0)
+        self.TURQUOISE = (0, 255, 255)
+        self.LIGHT_BLUE = (0, 180, 255)
 
         self.start_x, self.start_y = 10, 10
 
@@ -28,6 +34,7 @@ class RobotSimulation:
         self.iterator = 0
         self.finished_path = False
         self.trail_points = []
+        self.room = [(5, 5, 495, 5), (495, 5, 495, 495), (495, 495, 5, 495), (5, 495, 5, 5)]
 
     def move_robot(self):
         if self.path:
@@ -62,7 +69,21 @@ class RobotSimulation:
         else:
             raise Exception("Empty 'path'")
 
+    def validate_path(self, *point):
+        p_x1, p_y1 = point[0]
+        p_x2, p_y2 = point[1]
+
+        for line in self.room:
+            l_x1, l_y1, l_x2, l_y2 = line
+
+
+
+
     def main(self):
+
+        if not all(self.validate_path(points) for points in zip(self.path[:-1], self.path[1:])):
+            raise Exception("Path leads outside the room")
+
         runner = True
         while runner:
             self.clock.tick(self.FPS)
@@ -71,6 +92,10 @@ class RobotSimulation:
                     runner = False
             self.move_robot()
             self.screen.fill(self.BLACK)
+
+            for line in self.room:
+                pygame.draw.line(self.screen, self.GREEN, line[:2], line[2:], width=2)
+
             pygame.draw.rect(self.screen, self.RED, self.robot)
 
             for point in self.path:
