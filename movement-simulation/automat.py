@@ -5,8 +5,8 @@ class RobotSimulation:
     def __init__(self):
         pygame.init()
 
-        self.SCREEN_WIDTH = 500
-        self.SCREEN_HEIGHT = 500
+        self.SCREEN_WIDTH = 800
+        self.SCREEN_HEIGHT = 800
         self.FPS = 60
 
         self.WHITE = (255, 255, 255)
@@ -29,12 +29,12 @@ class RobotSimulation:
 
         self.robot = pygame.Rect((self.start_x, self.start_y, 25, 25))
 
-        self.path = [(self.start_x, self.start_y), (200, 10), (200, 250), (100, 250), (100, 300), (300, 300),
-                     (300, 450), (10, 450)]
+        self.path = [(self.start_x, self.start_y), (200, 10), (200, 200), (150, 200), (150, 150), (100, 150)]
+        self.room = [(5, 5, 495, 5), (495, 5, 495, 495), (495, 495, 5, 495), (5, 495, 5, 5)]
         self.iterator = 0
         self.finished_path = False
         self.trail_points = []
-        self.room = [(5, 5, 495, 5), (495, 5, 495, 495), (495, 495, 5, 495), (5, 495, 5, 5)]
+
 
     def move_robot(self):
         if self.path:
@@ -43,6 +43,11 @@ class RobotSimulation:
                 dx = target_x - self.robot.x
                 dy = target_y - self.robot.y
                 speed = 2
+
+                print(f"dx = {dx}")
+                print(f"dy = {dy}")
+                print(f"self.robot.x = {self.robot.x}")
+                print(f"self.robot.y = {self.robot.y}")
 
                 if dx != 0:
                     self.robot.x += speed if dx > 0 else -speed
@@ -55,10 +60,10 @@ class RobotSimulation:
                     self.iterator += 1
                     if self.iterator >= len(self.path):
                         self.iterator = 0
-                        # self.finished_path = True
+                        self.finished_path = True
                         print(self.path)
-                        self.path = self.path[::-1]
-                        print(self.path)
+                        # self.path = self.path[::-1]
+                        # print(self.path)
 
                     # Dodawanie żółtego kółka w punkcie, przez który przechodzi robot
                     self.trail_points.append((target_x, target_y))
