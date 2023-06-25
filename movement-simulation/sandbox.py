@@ -1,4 +1,5 @@
 import pygame
+import math
 
 
 class RobotSimulation:
@@ -22,7 +23,7 @@ class RobotSimulation:
 
         self.robot = pygame.Rect((self.start_x, self.start_y, 25, 25))
 
-        self.path = [(self.start_x, self.start_y), (200, 10), (200, 200), (100, 200), (50, 50)]
+        self.path = [(self.start_x, self.start_y), (100, 10), (100, 60), (50, 20)]
         self.room = [(5, 5, 495, 5), (495, 5, 495, 495), (495, 495, 5, 495), (5, 495, 5, 5)]
         self.iterator = 0
         self.finished_path = False
@@ -34,16 +35,31 @@ class RobotSimulation:
                 target_x, target_y = self.path[self.iterator]
                 dx = target_x - self.robot.x
                 dy = target_y - self.robot.y
-                distance = (dx ** 2 + dy ** 2) ** 0.5
-                speed = 2
+
+                distance = math.sqrt(dx ** 2 + dy ** 2)
                 tolerance = 5
+
                 print(f"dx = {dx}")
                 print(f"dy = {dy}")
                 print(f"distance = {distance}")
 
                 if distance != 0:
-                    self.robot.x += speed * dx / distance if dx != 0 else 0
-                    self.robot.y += speed * dy / distance if dy != 0 else 0
+                    if dy != 0:
+                        ratio = abs(dx / dy)
+                    else:
+                        ratio = 0 if dx == 0 else float('inf')
+
+                    if abs(dx) > abs(dy):
+                        speed_x = 2
+                        speed_y = speed_x / ratio
+                    else:
+                        speed_y = 2
+                        speed_x = speed_y * ratio
+
+                    normalized_dx = dx / distance
+                    normalized_dy = dy / distance
+                    self.robot.x += speed_x * normalized_dx
+                    self.robot.y += speed_y * normalized_dy
                     print(f"self.robot.x = {self.robot.x}")
                     print(f"self.robot.y = {self.robot.y}")
 
@@ -57,9 +73,6 @@ class RobotSimulation:
                         print(f"Reversed path = {self.path}")
 
                 self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
-
-        else:
-            raise Exception("Empty 'path'")
 
     def main(self):
         runner = True

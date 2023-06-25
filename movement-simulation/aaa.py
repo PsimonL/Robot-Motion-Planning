@@ -45,9 +45,9 @@ class RobotSimulation:
 
                 if distance != 0:
                     if dy != 0:
-                        ratio = abs(dx / dy)  # Obliczanie stosunku dx do dy
+                        ratio = abs(dx / dy) 
                     else:
-                        ratio = 0 if dx == 0 else float('inf')  # Przypisanie 0 lub nieskończoności
+                        ratio = 0 if dx == 0 else float('inf')
 
                     if abs(dx) > abs(dy):
                         speed_x = 2
@@ -56,7 +56,6 @@ class RobotSimulation:
                         speed_y = 2
                         speed_x = speed_y * ratio
 
-                    # Dostosowanie prędkości, aby utrzymać stosunek dx do dy
                     normalized_dx = dx / distance
                     normalized_dy = dy / distance
                     self.robot.x += speed_x * normalized_dx

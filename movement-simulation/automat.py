@@ -66,7 +66,7 @@ class RobotSimulation:
                         # print(self.path)
 
                     # Dodawanie żółtego kółka w punkcie, przez który przechodzi robot
-                    # self.trail_points.append((target_x, target_y))
+                    self.trail_points.append((target_x, target_y))
 
                 # Dodawanie punktu do śladu
                 self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
@@ -134,8 +134,8 @@ class RobotSimulation:
 
             pygame.draw.rect(self.screen, self.RED, self.robot)
 
-            # for point in self.path:
-            #     pygame.draw.circle(self.screen, self.YELLOW, point, 5)
+            for point in self.path:
+                pygame.draw.circle(self.screen, self.YELLOW, point, 5)
 
             if len(self.trail_points) > 1:
                 pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
