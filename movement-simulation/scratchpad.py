@@ -2,15 +2,6 @@ import pygame
 import math
 
 
-class FloatRect:
-    def __init__(self, x, y, width, height):
-        self.rect = pygame.Rect(x, y, width, height)  # useless, works without
-        self.x = float(x)
-        self.y = float(y)
-        self.width = width
-        self.height = height
-
-
 class RobotSimulation:
     def __init__(self):
         pygame.init()
@@ -30,11 +21,10 @@ class RobotSimulation:
         pygame.display.set_caption("Automatic robot simulation")
         self.clock = pygame.time.Clock()
 
-        self.robot = FloatRect(self.start_x, self.start_y, 25, 25)
+        self.robot = pygame.Rect((self.start_x, self.start_y, 25, 25))
 
         # self.path = [(self.start_x, self.start_y), (100, 10), (100, 60), (50, 20)]
-        self.path = [(self.start_x, self.start_y), (50, 10), (50, 80), (20, 70), (20, 100), (100, 100), (200, 200),
-                     (300, 200), (370, 290)]
+        self.path = [(self.start_x, self.start_y), (50, 10), (50, 80), (20, 70)]
         # self.path = [(self.start_x, self.start_y), (100, 200)]
         self.room = [(5, 5, 495, 5), (495, 5, 495, 495), (495, 495, 5, 495), (5, 495, 5, 5)]
         self.iterator = 0
@@ -131,8 +121,7 @@ class RobotSimulation:
             for line in self.room:
                 pygame.draw.line(self.screen, self.GREEN, line[:2], line[2:], width=2)
 
-            pygame.draw.rect(self.screen, self.RED,
-                             pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
+            pygame.draw.rect(self.screen, self.RED, self.robot)
 
             if len(self.trail_points) > 1:
                 pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
