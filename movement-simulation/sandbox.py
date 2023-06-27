@@ -25,6 +25,7 @@ class RobotSimulation:
 
         # self.path = [(self.start_x, self.start_y), (100, 10), (100, 60), (50, 20)]
         self.path = [(self.start_x, self.start_y), (50, 10), (50, 80), (20, 70)]
+        # self.path = [(self.start_x, self.start_y), (100, 200)]
         self.room = [(5, 5, 495, 5), (495, 5, 495, 495), (495, 495, 5, 495), (5, 495, 5, 5)]
         self.iterator = 0
         self.finished_path = False
@@ -48,20 +49,22 @@ class RobotSimulation:
                         self.robot.x += speed if dx > 0 else -speed
                     if dy != 0:
                         self.robot.y += speed if dy > 0 else -speed
-                elif dx != 0 and dy != 0 and dx != dy:  # ruch na ukos
+                elif (dx != 0 and dy != 0) or (dx == 0 and dy == 0):  # ruch na ukos
                     print("DRUGI PRZYPADEK")
                     if distance != 0:
                         if (dx < dy) and (dx > 0 and dy > 0):
                             ratio = abs(dy / dx)
-                            speed_x = ratio * speed
-                            speed_y = speed
+                            speed_x = speed
+                            speed_y = ratio * speed
+                            print("2.1")
                             print(f"RATIO = {ratio}")
                             print(f"speed_x = {speed_x}")
                             print(f"speed_y = {speed_y}")
                         elif (dx > dy) and (dx > 0 and dy > 0):
                             ratio = abs(dx / dy)
-                            speed_x = speed
-                            speed_y = ratio * speed
+                            speed_x = ratio * speed
+                            speed_y = speed
+                            print("2.2")
                             print(f"RATIO = {ratio}")
                             print(f"speed_x = {speed_x}")
                             print(f"speed_y = {speed_y}")
@@ -69,6 +72,7 @@ class RobotSimulation:
                             ratio = abs(dx / dy)
                             speed_x = ratio * speed * (-1)
                             speed_y = speed * (-1)
+                            print("2.3")
                             print(f"RATIO = {ratio}")
                             print(f"speed_x = {speed_x}")
                             print(f"speed_y = {speed_y}")
@@ -76,6 +80,7 @@ class RobotSimulation:
                             ratio = abs(dy / dx)
                             speed_x = speed * (-1)
                             speed_y = ratio * speed * (-1)
+                            print("2.4")
                             print(f"RATIO = {ratio}")
                             print(f"speed_x = {speed_x}")
                             print(f"speed_y = {speed_y}")
@@ -96,10 +101,10 @@ class RobotSimulation:
                     self.iterator += 1
                     if self.iterator >= len(self.path):
                         self.iterator = 0
-                        self.finished_path = True
-                        # print(f"Path = {self.path}")
-                        # self.path = self.path[::-1]
-                        # print(f"Reversed path = {self.path}")
+                        # self.finished_path = True
+                        print(f"Path = {self.path}")
+                        self.path = self.path[::-1]
+                        print(f"Reversed path = {self.path}")
 
                 self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
 
