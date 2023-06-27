@@ -8,7 +8,7 @@ class RobotSimulation:
 
         self.SCREEN_WIDTH = 800
         self.SCREEN_HEIGHT = 800
-        self.FPS = 60
+        self.FPS = 80
 
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
@@ -23,13 +23,15 @@ class RobotSimulation:
 
         self.robot = pygame.Rect((self.start_x, self.start_y, 25, 25))
 
-        self.path = [(self.start_x, self.start_y), (100, 10), (100, 60), (50, 20)]
+        # self.path = [(self.start_x, self.start_y), (100, 10), (100, 60), (50, 20)]
+        self.path = [(self.start_x, self.start_y), (50, 10), (50, 80), (20, 70)]
         self.room = [(5, 5, 495, 5), (495, 5, 495, 495), (495, 495, 5, 495), (5, 495, 5, 5)]
         self.iterator = 0
         self.finished_path = False
         self.trail_points = []
 
     def move_robot(self):
+        global speed_x, speed_y
         if self.path:
             if not self.finished_path:
                 target_x, target_y = self.path[self.iterator]
@@ -37,40 +39,67 @@ class RobotSimulation:
                 dy = target_y - self.robot.y
 
                 distance = math.sqrt(dx ** 2 + dy ** 2)
-                tolerance = 5
+                tolerance = 1
+
+                speed = 1
+                if (dx == 0 and dy != 0) or (dy == 0 and dx != 0) or (dx == dy):  # ruch, pionowo i horyzontalnie
+                    print("PIERWSZY PRZYPADEK")
+                    if dx != 0:
+                        self.robot.x += speed if dx > 0 else -speed
+                    if dy != 0:
+                        self.robot.y += speed if dy > 0 else -speed
+                elif dx != 0 and dy != 0 and dx != dy:  # ruch na ukos
+                    print("DRUGI PRZYPADEK")
+                    if distance != 0:
+                        if (dx < dy) and (dx > 0 and dy > 0):
+                            ratio = abs(dy / dx)
+                            speed_x = ratio * speed
+                            speed_y = speed
+                            print(f"RATIO = {ratio}")
+                            print(f"speed_x = {speed_x}")
+                            print(f"speed_y = {speed_y}")
+                        elif (dx > dy) and (dx > 0 and dy > 0):
+                            ratio = abs(dx / dy)
+                            speed_x = speed
+                            speed_y = ratio * speed
+                            print(f"RATIO = {ratio}")
+                            print(f"speed_x = {speed_x}")
+                            print(f"speed_y = {speed_y}")
+                        elif (dx < dy) and (dx < 0 and dy < 0):
+                            ratio = abs(dx / dy)
+                            speed_x = ratio * speed * (-1)
+                            speed_y = speed * (-1)
+                            print(f"RATIO = {ratio}")
+                            print(f"speed_x = {speed_x}")
+                            print(f"speed_y = {speed_y}")
+                        elif (dx > dy) and (dx < 0 and dy < 0):
+                            ratio = abs(dy / dx)
+                            speed_x = speed * (-1)
+                            speed_y = ratio * speed * (-1)
+                            print(f"RATIO = {ratio}")
+                            print(f"speed_x = {speed_x}")
+                            print(f"speed_y = {speed_y}")
+
+                        self.robot.x += speed_x
+                        self.robot.y += speed_y
+                else:  # nie ma innej możliwości ruchu
+                    raise Exception("Not possible")
 
                 print(f"dx = {dx}")
                 print(f"dy = {dy}")
-                print(f"distance = {distance}")
-
-                if distance != 0:
-                    if dy != 0:
-                        ratio = abs(dx / dy)
-                    else:
-                        ratio = 0 if dx == 0 else float('inf')
-
-                    if abs(dx) > abs(dy):
-                        speed_x = 2
-                        speed_y = speed_x / ratio
-                    else:
-                        speed_y = 2
-                        speed_x = speed_y * ratio
-
-                    normalized_dx = dx / distance
-                    normalized_dy = dy / distance
-                    self.robot.x += speed_x * normalized_dx
-                    self.robot.y += speed_y * normalized_dy
-                    print(f"self.robot.x = {self.robot.x}")
-                    print(f"self.robot.y = {self.robot.y}")
+                # print(f"distance = {distance}")
+                print(f"self.robot.x = {self.robot.x}")
+                print(f"self.robot.y = {self.robot.y}")
 
                 if distance <= tolerance:
                     print(f"Iteration: {self.iterator}")
                     self.iterator += 1
                     if self.iterator >= len(self.path):
                         self.iterator = 0
-                        print(f"Path = {self.path}")
-                        self.path = self.path[::-1]
-                        print(f"Reversed path = {self.path}")
+                        self.finished_path = True
+                        # print(f"Path = {self.path}")
+                        # self.path = self.path[::-1]
+                        # print(f"Reversed path = {self.path}")
 
                 self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
 
