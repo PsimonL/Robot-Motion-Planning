@@ -12,7 +12,7 @@ class FloatRect:
 
 class Obstacle:
     def __init__(self, x, y, width, height):
-        self.rect = pygame.Rect(x, y, width, height)
+        self.float_rect = FloatRect(x, y, width, height)
         self.BLUE = (0, 0, 255)
 
 
@@ -207,7 +207,7 @@ class RobotSimulation:
                              pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
 
             for obstacle in self.obstacles:
-                pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
+                pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.float_rect)
 
             for point in self.path:
                 pygame.draw.circle(self.screen, self.YELLOW, point, 5)
@@ -216,8 +216,8 @@ class RobotSimulation:
                 pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
 
             for obstacle in self.obstacles:
-                if self.check_collision(self.robot, obstacle.rect):
-                    raise Exception(f"Collision occurred between {self.robot} and {obstacle.rect}")
+                if self.check_collision(self.robot, obstacle.float_rect):
+                    raise Exception(f"Collision occurred between {self.robot} and {obstacle.float_rect}")
 
             pygame.display.update()
         pygame.quit()
