@@ -4,11 +4,17 @@ import math
 
 class FloatRect:
     def __init__(self, x, y, width, height):
-        self.rect = pygame.Rect(x, y, width, height)  # useless, works without
         self.x = float(x)
         self.y = float(y)
         self.width = width
         self.height = height
+
+
+class Obstacle:
+    def __init__(self, x, y, width, height):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.BLUE = (0, 0, 255)
+
 
 
 class RobotSimulation:
@@ -22,7 +28,6 @@ class RobotSimulation:
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
         self.RED = (255, 0, 0)
-        self.BLUE = (0, 0, 255)
         self.YELLOW = (255, 255, 0)
         self.GREEN = (0, 255, 0)
         self.FUCHSIA = (255, 0, 255)
@@ -47,6 +52,10 @@ class RobotSimulation:
         self.iterator = 0
         self.finished_path = False
         self.trail_points = []
+        self.obstacles = [
+            Obstacle(200, 200, 100, 50),
+            Obstacle(400, 300, 50, 100)
+        ]
 
     def move_robot(self):
         global speed_x, speed_y
@@ -164,6 +173,15 @@ class RobotSimulation:
                 return True
             return False
 
+    def check_collision(self, rect1, rect2):
+        x1, y1, width1, height1 = rect1.x, rect1.y, rect1.width, rect1.height
+        x2, y2, width2, height2 = rect2.x, rect2.y, rect2.width, rect2.height
+
+        if x1 < x2 + width2 and x1 + width1 > x2 and y1 < y2 + height2 and y1 + height1 > y2:
+            return True
+        else:
+            return False
+
     def main(self):
 
         print("Źródło: http://informatyka.wroc.pl/node/455?page=0,2")
@@ -188,14 +206,24 @@ class RobotSimulation:
             pygame.draw.rect(self.screen, self.RED,
                              pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
 
+            for obstacle in self.obstacles:
+                pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
+
             for point in self.path:
                 pygame.draw.circle(self.screen, self.YELLOW, point, 5)
 
             if len(self.trail_points) > 1:
                 pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
 
+            for obstacle in self.obstacles:
+                if self.check_collision(self.robot, obstacle.rect):
+                    raise Exception(f"Collision occurred between {self.robot} and {obstacle.rect}")
+
             pygame.display.update()
         pygame.quit()
+
+
+
 
 
 if __name__ == '__main__':
