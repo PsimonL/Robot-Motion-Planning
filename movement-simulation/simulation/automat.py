@@ -1,4 +1,14 @@
 import pygame
+import math
+
+
+class FloatRect:
+    def __init__(self, x, y, width, height):
+        self.rect = pygame.Rect(x, y, width, height)  # useless, works without
+        self.x = float(x)
+        self.y = float(y)
+        self.width = width
+        self.height = height
 
 
 class RobotSimulation:
@@ -7,7 +17,7 @@ class RobotSimulation:
 
         self.SCREEN_WIDTH = 800
         self.SCREEN_HEIGHT = 800
-        self.FPS = 60
+        self.FPS = 80
 
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
@@ -27,52 +37,95 @@ class RobotSimulation:
         pygame.display.set_caption("Automatic robot simulation")
         self.clock = pygame.time.Clock()
 
-        self.robot = pygame.Rect((self.start_x, self.start_y, 25, 25))
+        self.robot = FloatRect(self.start_x, self.start_y, 25, 25)
 
-        self.path = [(self.start_x, self.start_y), (200, 10), (200, 200), (150, 200), (150, 150), (100, 150)]
+        # self.path = [(self.start_x, self.start_y), (100, 10), (100, 60), (50, 20)]
+        self.path = [(self.start_x, self.start_y), (50, 10), (50, 80), (20, 70), (20, 100), (100, 100), (200, 200),
+                     (300, 200), (370, 290)]
+        # self.path = [(self.start_x, self.start_y), (100, 200)]
         self.room = [(5, 5, 495, 5), (495, 5, 495, 495), (495, 495, 5, 495), (5, 495, 5, 5)]
         self.iterator = 0
         self.finished_path = False
         self.trail_points = []
 
-
     def move_robot(self):
+        global speed_x, speed_y
         if self.path:
             if not self.finished_path:
                 target_x, target_y = self.path[self.iterator]
                 dx = target_x - self.robot.x
                 dy = target_y - self.robot.y
-                speed = 2
+
+                distance = math.sqrt(dx ** 2 + dy ** 2)
+                tolerance = 1
+
+                speed = 1
+                if (dx == 0 and dy != 0) or (dy == 0 and dx != 0) or (dx == dy):  # ruch, pionowo i horyzontalnie
+                    print("PIERWSZY PRZYPADEK")
+                    if dx != 0:
+                        self.robot.x += speed if dx > 0 else -speed
+                    if dy != 0:
+                        self.robot.y += speed if dy > 0 else -speed
+                elif (dx != 0 and dy != 0) or (dx == 0 and dy == 0):  # ruch na ukos
+                    print("DRUGI PRZYPADEK")
+                    if distance != 0:
+                        if (dx < dy) and (dx > 0 and dy > 0):
+                            ratio = abs(dy / dx)
+                            speed_x = speed
+                            speed_y = ratio * speed
+                            print("2.1")
+                            print(f"RATIO = {ratio}")
+                            print(f"speed_x = {speed_x}")
+                            print(f"speed_y = {speed_y}")
+                        elif (dx > dy) and (dx > 0 and dy > 0):
+                            ratio = abs(dx / dy)
+                            speed_x = ratio * speed
+                            speed_y = speed
+                            print("2.2")
+                            print(f"RATIO = {ratio}")
+                            print(f"speed_x = {speed_x}")
+                            print(f"speed_y = {speed_y}")
+                        elif (dx < dy) and (dx < 0 and dy < 0):
+                            ratio = abs(dx / dy)
+                            speed_x = ratio * speed * (-1)
+                            speed_y = speed * (-1)
+                            print("2.3")
+                            print(f"RATIO = {ratio}")
+                            print(f"speed_x = {speed_x}")
+                            print(f"speed_y = {speed_y}")
+                        elif (dx > dy) and (dx < 0 and dy < 0):
+                            ratio = abs(dy / dx)
+                            speed_x = speed * (-1)
+                            speed_y = ratio * speed * (-1)
+                            print("2.4")
+                            print(f"RATIO = {ratio}")
+                            print(f"speed_x = {speed_x}")
+                            print(f"speed_y = {speed_y}")
+
+                        self.robot.x += speed_x
+                        self.robot.y += speed_y
+                else:  # nie ma innej możliwości ruchu
+                    raise Exception("Not possible")
 
                 print(f"dx = {dx}")
                 print(f"dy = {dy}")
+                # print(f"distance = {distance}")
                 print(f"self.robot.x = {self.robot.x}")
                 print(f"self.robot.y = {self.robot.y}")
 
-                if dx != 0:
-                    self.robot.x += speed if dx > 0 else -speed
-
-                if dy != 0:
-                    self.robot.y += speed if dy > 0 else -speed
-
-                if abs(dx) == 0 and abs(dy) == 0:
-                    print(self.iterator)
+                if distance <= tolerance:
+                    print(f"Iteration: {self.iterator}")
                     self.iterator += 1
                     if self.iterator >= len(self.path):
                         self.iterator = 0
-                        self.finished_path = True
-                        print(self.path)
-                        # self.path = self.path[::-1]
-                        # print(self.path)
+                        # self.finished_path = True
+                        print(f"Path = {self.path}")
+                        self.path = self.path[::-1]
+                        print(f"Reversed path = {self.path}")
 
-                    # Dodawanie żółtego kółka w punkcie, przez który przechodzi robot
                     self.trail_points.append((target_x, target_y))
 
-                # Dodawanie punktu do śladu
                 self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
-
-        else:
-            raise Exception("Empty 'path'")
 
     def cross_product(self, X, Y, Z):
         x1, y1 = Z[0] - X[0], Z[1] - X[1]
@@ -132,7 +185,8 @@ class RobotSimulation:
             for line in self.room:
                 pygame.draw.line(self.screen, self.GREEN, line[:2], line[2:], width=2)
 
-            pygame.draw.rect(self.screen, self.RED, self.robot)
+            pygame.draw.rect(self.screen, self.RED,
+                             pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
 
             for point in self.path:
                 pygame.draw.circle(self.screen, self.YELLOW, point, 5)
