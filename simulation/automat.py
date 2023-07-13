@@ -53,7 +53,7 @@ class RobotSimulation:
         self.finished_path = False
         self.trail_points = []
         self.obstacles = [
-            Obstacle(200, 200, 100, 50),
+            Obstacle(200, 100, 100, 50),
             Obstacle(400, 300, 50, 100)
         ]
 
