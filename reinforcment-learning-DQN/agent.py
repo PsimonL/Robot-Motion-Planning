@@ -1,5 +1,5 @@
 import tensorflow
-from reinforcment-learning-DQN.env.environment import envi
+import environment
 
 
 class DQNAgent:
