@@ -8,9 +8,6 @@ import geometry
 
 class RobotSimulation:
     def __init__(self):
-        self.init_env()
-
-    def init_env(self):
         pygame.init()
 
         self.SCREEN_WIDTH = 800
@@ -28,15 +25,15 @@ class RobotSimulation:
         self.TURQUOISE = (0, 255, 255)
         self.LIGHT_BLUE = (0, 180, 255)
 
-        self.start_x, self.start_y = 10, 10
+        self.__start_x, self.__start_y = 10, 10
 
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         pygame.display.set_caption("Automatic robot simulation")
         self.clock = pygame.time.Clock()
 
-        self.robot = shapes.FloatRect(self.start_x, self.start_y, 25, 25)
+        self.robot = shapes.FloatRect(self.__start_x, self.__start_y, 25, 25)
 
-        self.path = [(self.start_x, self.start_y), (50, 10), (50, 80), (20, 70), (20, 100), (100, 100), (200, 200),
+        self.path = [(self.__start_x, self.__start_y), (50, 10), (50, 80), (20, 70), (20, 100), (100, 100), (200, 200),
                      (300, 200), (370, 290)]
         self.room = [(5, 5, 495, 5), (495, 5, 495, 495), (495, 495, 5, 495), (5, 495, 5, 5)]
         self.iterator = 0

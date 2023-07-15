@@ -16,6 +16,7 @@ def check_pair(pair1, pair2):
     p_x2, p_y2 = pair2
 
     A, B = pair1, pair2
+
     obj = environment.RobotSimulation()
     for i in range(len(obj.room) - 1):
         C, D = obj.room[i], obj.room[i + 1]
