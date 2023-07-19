@@ -26,6 +26,9 @@ class RobotSimulation:
         self.start_y = 10
         self.finish_x = 200
         self.finish_y = 200
+        self.total_reward = 0
+        self.counter = 0
+        self.rewards_per_counter = {self.counter: 0}
         self.robot = shapes.FloatRect(self.start_x, self.start_y, 25, 25)
 
         self.trail_points = []
@@ -65,6 +68,10 @@ class RobotSimulation:
         self.robot.x = self.start_x
         self.robot.y = self.start_y
         self.trail_points = []
+        self.total_reward = 0
+        self.total_reward = 0
+        self.counter += 1
+        self.rewards_per_counter[self.counter] = 0
 
     def calculate_distance_to_finish(self):
         distance_x = self.finish_x - self.robot.x
@@ -78,7 +85,7 @@ class RobotSimulation:
         distance_to_finish = self.calculate_distance_to_finish()
 
         # reward for becoming closer to aim
-        reward = -0.01 * distance_to_finish
+        reward = 100 / distance_to_finish
 
         done = False
 
@@ -86,6 +93,8 @@ class RobotSimulation:
         if distance_to_finish < 20:
             reward = 100
             done = True
+            self.total_reward += reward
+            self.rewards_per_counter[self.counter] += reward
             self.reset()
 
         # collision penalty
@@ -93,15 +102,25 @@ class RobotSimulation:
             if geometry.check_collision(self.robot, obstacle.rect):
                 reward = -50
                 done = True
+                self.total_reward += reward
                 self.reset()
 
         # too long time penalty
         if len(self.trail_points) > 1000:
             reward = -100
             done = True
+            self.total_reward += reward
             self.reset()
 
+        self.total_reward += reward
+
         return next_state, reward, done
+
+    def print_rewards_per_counter(self):
+        # TO FIX
+        print("Rewards per counter:")
+        for counter, total_reward in self.rewards_per_counter.items():
+            print(f"Counter: {counter}, Total Reward: {total_reward}")
 
     def main(self):
         runner = True
@@ -131,6 +150,7 @@ class RobotSimulation:
 
             pygame.display.update()
         pygame.quit()
+        self.print_rewards_per_counter()         # TO FIX
 
 
 if __name__ == '__main__':

@@ -7,11 +7,22 @@ class DQNagent:
         self.start_point = start_point
         self.end_point = end_point
 
-    def generate_path(self):
+    def build_model(self):
         pass
 
-    def choose_action(self, state):
+    def update_model(self):
         pass
 
-    def update(self, state, action, reward, next_state):
+    def train_model(self):
         pass
+
+    def action(self):
+        pass
+
+
+if __name__ == "__main__":
+    state_size = 2  # pozycja robota, x i y, czyli stany
+    action_size = 8  # możliwe akcje, czyli ruchy
+
+    agent = DQNagent(state_size, action_size)
+    env = environment.RobotSimulation()
