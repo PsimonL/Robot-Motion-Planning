@@ -16,8 +16,9 @@ class DQNagent:
     def train_model(self):
         pass
 
-    def action(self):
-        pass
+    def action(self, state):
+        print(f"STATE={state}")
+        return 8
 
 
 if __name__ == "__main__":
@@ -26,3 +27,19 @@ if __name__ == "__main__":
 
     agent = DQNagent(state_size, action_size)
     env = environment.RobotSimulation()
+
+    print("FLAG1")
+
+    episodes = 1
+    for episode in range(episodes):
+        state = (env.robot.x, env.robot.y)
+        done = False
+        total_reward = 0
+
+        while not done:
+            action = agent.action(state)
+            next_state, reward, done = env.step(action)
+            total_reward += reward
+            state = next_state
+        print(f"Episode: {episode + 1}, Total Reward: {total_reward}")
+        env.reset()

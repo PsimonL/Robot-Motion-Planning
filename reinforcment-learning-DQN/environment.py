@@ -136,6 +136,8 @@ class RobotSimulation:
             current_state = next_state
             print(f"current_state = {current_state}")
             print(f"reward = {reward}")
+            if current_state[0] == 184 and current_state[1] == 184:
+                break
 
             self.screen.fill(self.BLACK)
 
@@ -148,9 +150,10 @@ class RobotSimulation:
             if len(self.trail_points) > 1:
                 pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
 
+            # self.print_rewards_per_counter()  # TO FIX
+
             pygame.display.update()
         pygame.quit()
-        self.print_rewards_per_counter()         # TO FIX
 
 
 if __name__ == '__main__':
