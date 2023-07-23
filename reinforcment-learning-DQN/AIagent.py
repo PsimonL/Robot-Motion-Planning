@@ -1,6 +1,4 @@
-import tensorflow
 import environment
-
 
 class DQNagent:
     def __init__(self, start_point, end_point):
@@ -26,11 +24,9 @@ if __name__ == "__main__":
     action_size = 8  # możliwe akcje, czyli ruchy
 
     agent = DQNagent(state_size, action_size)
-    env = environment.RobotSimulation()
+    env = environment.RobotSimulation(a_start_x=10, a_start_y=10, a_finish_x=200, a_finish_y=200)
 
-    print("FLAG1")
-
-    episodes = 1
+    episodes = 2
     for episode in range(episodes):
         state = (env.robot.x, env.robot.y)
         done = False
@@ -43,3 +39,5 @@ if __name__ == "__main__":
             state = next_state
         print(f"Episode: {episode + 1}, Total Reward: {total_reward}")
         env.reset()
+
+    env.main()

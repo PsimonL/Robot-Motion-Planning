@@ -5,7 +5,7 @@ import geometry
 
 
 class RobotSimulation:
-    def __init__(self, a_start_x, a_start_y, a_finish_x, a_finish_y):
+    def __init__(self):
         pygame.init()
 
         self.SCREEN_WIDTH = 800
@@ -22,10 +22,10 @@ class RobotSimulation:
         pygame.display.set_caption("Automatic robot simulation")
         self.clock = pygame.time.Clock()
 
-        self.start_x = a_start_x
-        self.start_y = a_start_y
-        self.finish_x = a_finish_x
-        self.finish_y = a_finish_y
+        self.start_x = 10
+        self.start_y = 10
+        self.finish_x = 200
+        self.finish_y = 200
         self.total_reward = 0
         self.counter = 0
         self.rewards_per_counter = {self.counter: 0}
