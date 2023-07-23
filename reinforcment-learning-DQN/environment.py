@@ -5,7 +5,7 @@ import geometry
 
 
 class RobotSimulation:
-    def __init__(self, a_start_x, a_start_y, a_finish_x, a_finish_y):
+    def __init__(self, a_start_x, a_start_y):
         pygame.init()
 
         self.SCREEN_WIDTH = 800
@@ -24,8 +24,8 @@ class RobotSimulation:
 
         self.start_x = a_start_x
         self.start_y = a_start_y
-        self.finish_x = a_finish_x
-        self.finish_y = a_finish_y
+        self.finish_x = 0
+        self.finish_y = 0
         self.total_reward = 0
         self.counter = 0
         self.rewards_per_counter = {self.counter: 0}
@@ -38,24 +38,26 @@ class RobotSimulation:
             shapes.Obstacle(400, 300, 50, 100)
         ]
 
-    def move_robot(self, action):
+        self.flaga = 0
+
+    def move_robot(self, direction):
         dx, dy = 0, 0
 
-        if action == 1:  # move left
+        if direction == 1:  # move left
             dx = -1
-        elif action == 2:  # move right
+        elif direction == 2:  # move right
             dx = 1
-        elif action == 3:  # move up
+        elif direction == 3:  # move up
             dy = -1
-        elif action == 4:  # move down
+        elif direction == 4:  # move down
             dy = 1
-        elif action == 5:  # move up and left
+        elif direction == 5:  # move up and left
             dx, dy = -1, -1
-        elif action == 6:  # move up and right
+        elif direction == 6:  # move up and right
             dx, dy = 1, -1
-        elif action == 7:  # move down and left
+        elif direction == 7:  # move down and left
             dx, dy = -1, 1
-        elif action == 8:  # move down and right
+        elif direction == 8:  # move down and right
             dx, dy = 1, 1
 
         speed = 1
@@ -77,9 +79,11 @@ class RobotSimulation:
         distance_y = self.finish_y - self.robot.y
         return math.sqrt(distance_x ** 2 + distance_y ** 2)
 
-    def step(self, action):
+    def step(self, direction):
         next_state = (self.robot.x, self.robot.y)
-        self.move_robot(action)
+        # print(f"({next_state[0]}, {next_state[1]})")
+
+        self.move_robot(direction)
 
         distance_to_finish = self.calculate_distance_to_finish()
 
@@ -89,7 +93,7 @@ class RobotSimulation:
         done = False
 
         # end if finish
-        if distance_to_finish < 20:
+        if distance_to_finish < 2:
             reward = 100
             done = True
             self.total_reward += reward
@@ -121,43 +125,64 @@ class RobotSimulation:
         for counter, total_reward in self.rewards_per_counter.items():
             print(f"Counter: {counter}, Total Reward: {total_reward}")
 
+    def finish_setter(self, endpoints):
+        self.finish_x = endpoints[0]
+        self.finish_y = endpoints[1]
+
     def main(self, actions):
         runner = True
         action_index = 0
+        print(actions)
+
         while runner:
             self.clock.tick(self.FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    runner = False
+                    pygame.quit()
 
-            action = actions[action_index]
-            next_state, reward, done = self.step(action)
-            current_state = next_state
+            if action_index < len(actions):
+                action = actions[action_index]
+                next_state, reward, done = self.step(action)
 
-            # print(f"current_state = {current_state}")
-            # print(f"reward = {reward}")
+                current_state = next_state
 
-            self.screen.fill(self.BLACK)
+                # print(f"current_state = {current_state}")
+                # print(f"reward = {reward}")
 
-            pygame.draw.rect(self.screen, self.RED,
-                             pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
+                self.screen.fill(self.BLACK)
 
-            for obstacle in self.obstacles:
-                pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
+                pygame.draw.rect(self.screen, self.RED,
+                                 pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
 
-            if len(self.trail_points) > 1:
-                pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
+                for obstacle in self.obstacles:
+                    pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
 
-            pygame.display.update()
+                if len(self.trail_points) > 1:
+                    pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
 
-            if done and len(actions) - 1 > action_index:
-                action_index += 1
-                self.reset()
+                pygame.display.update()
 
-        pygame.quit()
+                if done:
+                    action_index += 1
+                    self.reset()
+            else:
+                print("Visualisation for this episode done.")
+                break
+        return 1
+
+
+def agent_driver():
+    simulation = RobotSimulation(a_start_x=10, a_start_y=10)
+    directions = [8, 2, 4]
+    end_points = [(100, 100), (100, 10), (10, 100)]
+    for x in range(len(end_points)):
+        simulation.flaga = simulation.flaga + 1
+        print(f"x = {end_points[x]}")
+        simulation.finish_setter(end_points[x])
+        aaa = simulation.main([directions[x]])
+        print(aaa)
+    print(f"simulation.flaga = {simulation.flaga}")
 
 
 if __name__ == '__main__':
-    simulation = RobotSimulation(a_start_x=10, a_start_y=10, a_finish_x=200, a_finish_y=200)
-    actions = [8, 2]
-    simulation.main(actions)
+    agent_driver()

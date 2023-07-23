@@ -5,7 +5,7 @@ import geometry
 
 
 class RobotSimulation:
-    def __init__(self):
+    def __init__(self, a_start_x, a_start_y, a_finish_x, a_finish_y):
         pygame.init()
 
         self.SCREEN_WIDTH = 800
@@ -22,10 +22,10 @@ class RobotSimulation:
         pygame.display.set_caption("Automatic robot simulation")
         self.clock = pygame.time.Clock()
 
-        self.start_x = 10
-        self.start_y = 10
-        self.finish_x = 200
-        self.finish_y = 200
+        self.start_x = a_start_x
+        self.start_y = a_start_y
+        self.finish_x = a_finish_x
+        self.finish_y = a_finish_y
         self.total_reward = 0
         self.counter = 0
         self.rewards_per_counter = {self.counter: 0}
@@ -68,7 +68,6 @@ class RobotSimulation:
         self.robot.x = self.start_x
         self.robot.y = self.start_y
         self.trail_points = []
-        self.total_reward = 0
         self.total_reward = 0
         self.counter += 1
         self.rewards_per_counter[self.counter] = 0
@@ -122,17 +121,18 @@ class RobotSimulation:
         for counter, total_reward in self.rewards_per_counter.items():
             print(f"Counter: {counter}, Total Reward: {total_reward}")
 
-    def main(self):
+    def main(self, actions):
         runner = True
+        action_index = 0
         while runner:
             self.clock.tick(self.FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     runner = False
 
-            action = 8
-
+            action = actions[action_index]
             next_state, reward, done = self.step(action)
+
             current_state = next_state
 
             # print(f"current_state = {current_state}")
@@ -150,9 +150,19 @@ class RobotSimulation:
                 pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
 
             pygame.display.update()
+
+            if done and len(actions) - 1 > action_index:
+                action_index += 1
+                self.reset()
+
         pygame.quit()
 
 
+def agent_driver():
+    simulation = RobotSimulation(a_start_x=10, a_start_y=10, a_finish_x=200, a_finish_y=200)
+    actions = [8, 2]
+    simulation.main(actions)
+
+
 if __name__ == '__main__':
-    simulation = RobotSimulation()
-    simulation.main()
+    agent_driver()
