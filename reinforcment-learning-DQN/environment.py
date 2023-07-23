@@ -69,7 +69,6 @@ class RobotSimulation:
         self.robot.y = self.start_y
         self.trail_points = []
         self.total_reward = 0
-        self.total_reward = 0
         self.counter += 1
         self.rewards_per_counter[self.counter] = 0
 
@@ -122,16 +121,16 @@ class RobotSimulation:
         for counter, total_reward in self.rewards_per_counter.items():
             print(f"Counter: {counter}, Total Reward: {total_reward}")
 
-    def main(self):
+    def main(self, actions):
         runner = True
-        while runner:
+        action_index = 0
+        while runner and action_index < len(actions):
             self.clock.tick(self.FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     runner = False
 
-            action = 8
-
+            action = actions[action_index]
             next_state, reward, done = self.step(action)
             current_state = next_state
 
@@ -150,9 +149,14 @@ class RobotSimulation:
                 pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
 
             pygame.display.update()
+            if done:
+                action_index += 1
+                self.reset()
+
         pygame.quit()
 
 
 if __name__ == '__main__':
-    simulation = RobotSimulation()
-    simulation.main()
+    simulation = RobotSimulation(a_start_x=10, a_start_y=10, a_finish_x=200, a_finish_y=200)
+    actions = [8, 2]
+    simulation.main(actions)
