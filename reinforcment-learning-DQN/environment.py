@@ -124,7 +124,7 @@ class RobotSimulation:
     def main(self, actions):
         runner = True
         action_index = 0
-        while runner and action_index < len(actions):
+        while runner:
             self.clock.tick(self.FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -149,7 +149,8 @@ class RobotSimulation:
                 pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
 
             pygame.display.update()
-            if done:
+
+            if done and len(actions) - 1 > action_index:
                 action_index += 1
                 self.reset()
 
