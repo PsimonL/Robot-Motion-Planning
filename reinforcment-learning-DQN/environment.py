@@ -40,7 +40,7 @@ class RobotSimulation:
 
         self.flaga = 0
 
-    def move_robot(self, direction):
+    def _move_robot(self, direction):
         dx, dy = 0, 0
 
         if direction == 1:  # move left
@@ -83,7 +83,7 @@ class RobotSimulation:
         next_state = (self.robot.x, self.robot.y)
         # print(f"({next_state[0]}, {next_state[1]})")
 
-        self.move_robot(direction)
+        self._move_robot(direction)
 
         distance_to_finish = self.calculate_distance_to_finish()
 
@@ -171,21 +171,21 @@ class RobotSimulation:
         return next_state, reward, done
 
 
-# def agent_driver():
-#     simulation = RobotSimulation(a_start_x=10, a_start_y=10)
-#     directions = [8, 2, 4]
-#     end_points = [(100, 100), (100, 10), (10, 100)]
-#     for x in range(len(end_points)):
-#         simulation.flaga = simulation.flaga + 1
-#         print(f"end_points = {end_points[x]}")
-#         simulation.finish_setter(end_points[x])
-#         a, b, c = simulation.main([directions[x]])
-#         print("a = {}".format(a))
-#         print("b = {}".format(b))
-#         print("c = {}".format(c))
-#         print("=================================================")
-#     print(f"simulation.flaga = {simulation.flaga}")
-#
-#
-# if __name__ == '__main__':
-#     agent_driver()
+def agent_driver():
+    simulation = RobotSimulation(a_start_x=10, a_start_y=10)
+    directions = [8, 2, 4]
+    end_points = [(100, 100), (100, 10), (10, 100)]
+    for x in range(len(end_points)):
+        simulation.flaga = simulation.flaga + 1
+        print(f"end_points = {end_points[x]}")
+        simulation.finish_setter(end_points[x])
+        a, b, c = simulation.main([directions[x]])
+        print("a = {}".format(a))
+        print("b = {}".format(b))
+        print("c = {}".format(c))
+        print("=================================================")
+    print(f"simulation.flaga = {simulation.flaga}")
+
+
+if __name__ == '__main__':
+    agent_driver()

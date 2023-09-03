@@ -1,6 +1,0 @@
-Env sends to Agent:
-- states
-- rewards
-
-Agent sends to Env:
-- actions
