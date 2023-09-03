@@ -1,5 +1,5 @@
 import random
-
+import torch
 import environment
 import tensorflow as tf
 import random as rd
@@ -7,16 +7,19 @@ import numpy as np
 import keras.models
 import keras.layers
 import keras.optimizers
+from environment import RobotSimulation
 
 from collections import deque
 
-
+MAX_MEMORY = 100_000
+BATCH_SIZE = 1000
+LR = 0.001
 class DQNagent:
-    def __init__(self, start_point, end_point, state_size, action_size, batch_size, no_episodes, memory):
-        self.state_size = state_size  # state to zmienna x i y, PLUS: odległość (cel-pozycja aktualna),pozycja przeszkód <- narazie tyle
-        self.action_size = action_size  # możliwe akcje, czyli ruchy, 8 możliwych
-        self.batch_size = batch_size
-        self.no_episodes = no_episodes
+    def __init__(self):
+        self.state_size = 2  # state to zmienna x i y, PLUS: odległość (cel-pozycja aktualna),pozycja przeszkód <- narazie tyle
+        self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
+        self.batch_size = 1000
+        self.no_episodes = 1000
 
         self.memory = deque(maxlen=6000)
         self.gamma = 0.95
@@ -28,7 +31,7 @@ class DQNagent:
         self.start_point = start_point
         self.end_point = end_point
 
-        self.model = self._build_model()  # private???
+        self.model = self._build_model()
 
     def _build_model(self):
         model = keras.models.Sequential([
@@ -85,7 +88,7 @@ class DQNagent:
             for time in range(5000):
                 # env.render()
                 action = agent.action(state)
-                next_state, reward, done, _ = env.step(action)
+                next_state, reward, done, _ = env._step(action)
                 reward = reward if not done else -10
                 next_state = np.reshape(next_state, [1, state_size])
                 agent.remember(state, action, reward, next_state, done)
