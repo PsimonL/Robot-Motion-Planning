@@ -27,9 +27,12 @@ class RobotSimulation:
         self.trail_points, self.robot, self.obstacles = None, None, None
         self.flag = None
 
-        self.reset()
+        self.reset_env()
 
-    def reset(self):
+    def get_state(self):
+        return self.robot.x, self.robot.y
+
+    def reset_env(self):
         self.frame_iteration = 0
 
         self.start_x = 0
@@ -49,7 +52,7 @@ class RobotSimulation:
 
         self.flag = 0
 
-    def _move_robot(self, action):
+    def move_robot(self, action):
         dx, dy = 0, 0
 
         if action == 1:  # move left - L
@@ -74,14 +77,36 @@ class RobotSimulation:
         self.robot.y = max(0, min(self.SCREEN_HEIGHT - self.robot.height, self.robot.y + dy * speed))
         self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
 
-    def _step(self, action):
+    def ui_runner(self):
+        runner = True
+
+        while runner:
+            self.clock.tick(self.FPS)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+
+            self.screen.fill(self.BLACK)
+
+            pygame.draw.rect(self.screen, self.RED,
+                             pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
+
+            for obstacle in self.obstacles:
+                pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
+
+            if len(self.trail_points) > 1:
+                pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
+
+            pygame.display.update()
+
+    def do_step(self, action):
         self.frame_iteration += 1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
 
-        self._move_robot(action)
+        self.move_robot(action)
 
         game_over = False
         distance_to_finish = math.sqrt((self.finish_x - self.robot.x) ** 2 + (self.finish_y - self.robot.y) ** 2)
@@ -100,7 +125,7 @@ class RobotSimulation:
             if geometry.check_collision(self.robot, obstacle.rect):
                 self.reward = -75
                 game_over = True
-                self.reset()
+                self.reset_env()
                 return self.reward, game_over
 
         # too long time penalty
@@ -109,40 +134,5 @@ class RobotSimulation:
             game_over = True
             return self.reward, game_over
 
+        self.ui_runner()
         return self.reward, game_over
-
-    def env_driver(self, actions):
-        runner = True
-        action_index = 0
-        print(actions)
-
-        while runner:
-            self.clock.tick(self.FPS)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-
-            if action_index < len(actions):
-                action = actions[action_index]
-                reward, done = self._step(action)
-
-                self.screen.fill(self.BLACK)
-
-                pygame.draw.rect(self.screen, self.RED,
-                                 pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
-
-                for obstacle in self.obstacles:
-                    pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
-
-                if len(self.trail_points) > 1:
-                    pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
-
-                pygame.display.update()
-
-                if done:
-                    action_index += 1
-                    self.reset()
-            else:
-                print("Visualisation for this episode done.")
-                break
-            return reward, done
