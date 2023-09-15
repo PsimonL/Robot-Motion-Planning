@@ -1,44 +1,106 @@
+import random
+import torch
 import environment
+import tensorflow as tf
+import random as rd
+import numpy as np
+import keras.models
+import keras.layers
+import keras.optimizers
+from environment import RobotSimulation
+
+from collections import deque
+
+
 
 class DQNagent:
-    def __init__(self, env, start_point, end_point):
-        self.env = env
-        self.start_point = start_point
-        self.end_point = end_point
+    def __init__(self):
+        self.state_size = 2  # state to zmienna x i y, PLUS: odległość (cel-pozycja aktualna),pozycja przeszkód <- narazie tyle
+        self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
+        self.batch_size = 1000
+        self.no_episodes = 1000
+        self.max_memory = 100_000
 
-    def build_model(self):
-        pass
+        self.memory = deque(maxlen=3000)
+        self.gamma = 0.95
+        self.epsilon = 1.0
+        self.epsilon_decay = 0.995
+        self.epsilon_min = 0.01
+        self.learning_rate = 0.001
 
-    def update_model(self):
-        pass
+        self.start_point = (100, 100)
+        self.end_point = (500, 500)
+
+        self.model = self._build_model()
+
+    def _build_model(self):
+        model = keras.models.Sequential([
+            keras.layers.Input(shape=(self.state_size,)),
+            keras.layers.Dense(64, activation='relu'),
+            keras.layers.Dense(64, activation='relu'),
+            keras.layers.Dense(self.action_size, activation='linear')
+            # Warstwa wyjściowa bez aktywacji dla Q-wartości, no probability cause of linear
+        ])
+
+        # Skonfiguruj optymalizator i funkcję straty
+        model.compile(
+            optimizer=keras.optimizers.Adam(lr=self.learning_rate),
+            loss='mse'
+        )
+
+        return model
+
+    def remember(self, state, action, reward, next_sate, done):  # done for episode
+        self.memory.append((state, action, reward, next_sate, done))
+
+    def get_action(self, state):
+        if np.random.rand() <= self.epsilon:  # check numpy in if, if it suits
+            return random.randrange(self.action_size)
+        action_values = self.model.predict(state)
+        return np.argmax(action_values[0])
 
     def train_model(self):
-        pass
+        if len(self.memory) > self.batch_size:
+            minibatch = random.sample(self.memory, self.batch_size)
+        else:
+            minibatch = self.memory
 
-    def action(self, a):
-        next_state, reward, done = self.env.step(a)
-        return next_state, reward, done
+        for state, action, reward, next_sate, done in minibatch:
+            Q_new = reward
+            if not done:
+                Q_new = (reward + self.gamma * np.amax(self.model.predict(next_sate)[0]))  # Bellman
+            target = self.model.predict(state)
+            target[0][action] = Q_new
 
+            self.model.fit(state, target, epochs=1, verbose=0)
+
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+
+    def load(self, name):
+        self.model.load_weights(name)
+
+    def save(self, name):
+        self.model.save_weights(name)
+
+
+def driver():
+    agent = DQNagent()
+    env = RobotSimulation()
+
+    for e in range(agent.no_episodes):
+        for time in range(5000):
+            old_state = env.get_state()
+            action = agent.get_action(old_state)
+
+            reward, done = env.do_step(action)
+            new_state = env.get_state()
+
+            agent.remember(old_state, action, reward, new_state, done)
+
+            if done:
+                env.reset_env()
+                agent.train_model()
 
 if __name__ == "__main__":
-    state_size = 2  # pozycja robota, x i y, czyli stany
-    action_size = 8  # możliwe akcje, czyli ruchy
-
-    env = environment.RobotSimulation(a_start_x=10, a_start_y=10)
-    agent = DQNagent(env, start_point=(10, 10), end_point=(200, 200))
-
-    directions = [8, 2, 4]
-    end_points = [(100, 100), (100, 10), (10, 100)]
-    episodes = len(directions)
-
-    print("BEFORE")
-    for episode in range(episodes):
-        env.reset()
-        done = False
-        env.finish_setter(end_points[episode])
-        while not done:
-            print("INSIDE ")
-            next_state, reward, done = agent.action(directions[episode])
-
-        print(f"Episode: {episode + 1}")
-    print("AFTER")
+    driver()

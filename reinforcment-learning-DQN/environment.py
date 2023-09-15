@@ -5,7 +5,7 @@ import geometry
 
 
 class RobotSimulation:
-    def __init__(self, a_start_x, a_start_y):
+    def __init__(self):
         pygame.init()
 
         self.SCREEN_WIDTH = 800
@@ -22,13 +22,25 @@ class RobotSimulation:
         pygame.display.set_caption("Automatic robot simulation")
         self.clock = pygame.time.Clock()
 
-        self.start_x = a_start_x
-        self.start_y = a_start_y
-        self.finish_x = 0
-        self.finish_y = 0
-        self.total_reward = 0
-        self.counter = 0
-        self.rewards_per_counter = {self.counter: 0}
+        self.start_x, self.start_y, self.finish_x, self.finish_y = None, None, None, None
+        self.reward, self.frame_iteration = 0, 0
+        self.trail_points, self.robot, self.obstacles = None, None, None
+        self.flag = None
+
+        self.reset_env()
+
+    def get_state(self):
+        return self.robot.x, self.robot.y
+
+    def reset_env(self):
+        self.frame_iteration = 0
+
+        self.start_x = 0
+        self.start_y = 0
+        self.finish_x = 150
+        self.finish_y = 150
+
+        self.reward = 0
         self.robot = shapes.FloatRect(self.start_x, self.start_y, 25, 25)
 
         self.trail_points = []
@@ -38,101 +50,35 @@ class RobotSimulation:
             shapes.Obstacle(400, 300, 50, 100)
         ]
 
-        self.flaga = 0
+        self.flag = 0
 
-    def move_robot(self, direction):
+    def move_robot(self, action):
         dx, dy = 0, 0
 
-        if direction == 1:  # move left
+        if action == 1:  # move left - L
             dx = -1
-        elif direction == 2:  # move right
+        elif action == 2:  # move right - R
             dx = 1
-        elif direction == 3:  # move up
+        elif action == 3:  # move up - U
             dy = -1
-        elif direction == 4:  # move down
+        elif action == 4:  # move down - D
             dy = 1
-        elif direction == 5:  # move up and left
+        elif action == 5:  # move up and left - UL
             dx, dy = -1, -1
-        elif direction == 6:  # move up and right
+        elif action == 6:  # move up and right - UR
             dx, dy = 1, -1
-        elif direction == 7:  # move down and left
+        elif action == 7:  # move down and left - DL
             dx, dy = -1, 1
-        elif direction == 8:  # move down and right
+        elif action == 8:  # move down and right - DR
             dx, dy = 1, 1
 
         speed = 1
         self.robot.x = max(0, min(self.SCREEN_WIDTH - self.robot.width, self.robot.x + dx * speed))
         self.robot.y = max(0, min(self.SCREEN_HEIGHT - self.robot.height, self.robot.y + dy * speed))
-
         self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
 
-    def reset(self):
-        self.robot.x = self.start_x
-        self.robot.y = self.start_y
-        self.trail_points = []
-        self.total_reward = 0
-        self.counter += 1
-        self.rewards_per_counter[self.counter] = 0
-
-    def calculate_distance_to_finish(self):
-        distance_x = self.finish_x - self.robot.x
-        distance_y = self.finish_y - self.robot.y
-        return math.sqrt(distance_x ** 2 + distance_y ** 2)
-
-    def step(self, direction):
-        next_state = (self.robot.x, self.robot.y)
-        # print(f"({next_state[0]}, {next_state[1]})")
-
-        self.move_robot(direction)
-
-        distance_to_finish = self.calculate_distance_to_finish()
-
-        # reward for becoming closer to aim
-        reward = 100 / distance_to_finish
-
-        done = False
-
-        # end if finish
-        if distance_to_finish < 2:
-            reward = 100
-            done = True
-            self.total_reward += reward
-            self.rewards_per_counter[self.counter] += reward
-            self.reset()
-
-        # collision penalty
-        for obstacle in self.obstacles:
-            if geometry.check_collision(self.robot, obstacle.rect):
-                reward = -50
-                done = True
-                self.total_reward += reward
-                self.reset()
-
-        # too long time penalty
-        if len(self.trail_points) > 1000:
-            reward = -100
-            done = True
-            self.total_reward += reward
-            self.reset()
-
-        self.total_reward += reward
-
-        return next_state, reward, done
-
-    def print_rewards_per_counter(self):
-        # TO FIX
-        print("Rewards per counter:")
-        for counter, total_reward in self.rewards_per_counter.items():
-            print(f"Counter: {counter}, Total Reward: {total_reward}")
-
-    def finish_setter(self, endpoints):
-        self.finish_x = endpoints[0]
-        self.finish_y = endpoints[1]
-
-    def main(self, actions):
+    def ui_runner(self):
         runner = True
-        action_index = 0
-        print(actions)
 
         while runner:
             self.clock.tick(self.FPS)
@@ -140,49 +86,53 @@ class RobotSimulation:
                 if event.type == pygame.QUIT:
                     pygame.quit()
 
-            if action_index < len(actions):
-                action = actions[action_index]
-                next_state, reward, done = self.step(action)
+            self.screen.fill(self.BLACK)
 
-                current_state = next_state
+            pygame.draw.rect(self.screen, self.RED,
+                             pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
 
-                # print(f"current_state = {current_state}")
-                # print(f"reward = {reward}")
+            for obstacle in self.obstacles:
+                pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
 
-                self.screen.fill(self.BLACK)
+            if len(self.trail_points) > 1:
+                pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
 
-                pygame.draw.rect(self.screen, self.RED,
-                                 pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
+            pygame.display.update()
 
-                for obstacle in self.obstacles:
-                    pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
+    def do_step(self, action):
+        self.frame_iteration += 1
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
 
-                if len(self.trail_points) > 1:
-                    pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
+        self.move_robot(action)
 
-                pygame.display.update()
+        game_over = False
+        distance_to_finish = math.sqrt((self.finish_x - self.robot.x) ** 2 + (self.finish_y - self.robot.y) ** 2)
 
-                if done:
-                    action_index += 1
-                    self.reset()
-            else:
-                print("Visualisation for this episode done.")
-                break
-        return 1
+        # reward for becoming closer to aim
+        self.reward = 100 / distance_to_finish
 
+        # end if finish
+        if distance_to_finish < 2:
+            self.reward = 100
+            game_over = True
+            return self.reward, game_over
 
-def agent_driver():
-    simulation = RobotSimulation(a_start_x=10, a_start_y=10)
-    directions = [8, 2, 4]
-    end_points = [(100, 100), (100, 10), (10, 100)]
-    for x in range(len(end_points)):
-        simulation.flaga = simulation.flaga + 1
-        print(f"x = {end_points[x]}")
-        simulation.finish_setter(end_points[x])
-        aaa = simulation.main([directions[x]])
-        print(aaa)
-    print(f"simulation.flaga = {simulation.flaga}")
+        # collision penalty
+        for obstacle in self.obstacles:
+            if geometry.check_collision(self.robot, obstacle.rect):
+                self.reward = -75
+                game_over = True
+                self.reset_env()
+                return self.reward, game_over
 
+        # too long time penalty
+        if len(self.trail_points) > 1000:
+            self.reward = -100
+            game_over = True
+            return self.reward, game_over
 
-if __name__ == '__main__':
-    agent_driver()
+        self.ui_runner()
+        return self.reward, game_over
