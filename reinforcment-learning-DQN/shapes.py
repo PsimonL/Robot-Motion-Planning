@@ -1,5 +1,6 @@
 import pygame
 
+
 class FloatRect:
     def __init__(self, x, y, width, height):
         self.x = float(x)

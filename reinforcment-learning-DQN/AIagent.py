@@ -7,15 +7,15 @@ import numpy as np
 import keras.models
 import keras.layers
 import keras.optimizers
-from environment import RobotSimulation
-
 from collections import deque
 
+from environment import RobotSimulation
 
 
 class DQNagent:
     def __init__(self):
-        self.state_size = 2  # state to zmienna x i y, PLUS: odległość (cel-pozycja aktualna),pozycja przeszkód <- narazie tyle
+        self.state_size = 2  # state to zmienna x i y, PLUS: odległość (cel-pozycja aktualna),pozycja przeszkód <-
+        # narazie tyle
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 1000
         self.no_episodes = 1000
@@ -39,10 +39,8 @@ class DQNagent:
             keras.layers.Dense(64, activation='relu'),
             keras.layers.Dense(64, activation='relu'),
             keras.layers.Dense(self.action_size, activation='linear')
-            # Warstwa wyjściowa bez aktywacji dla Q-wartości, no probability cause of linear
         ])
 
-        # Skonfiguruj optymalizator i funkcję straty
         model.compile(
             optimizer=keras.optimizers.Adam(lr=self.learning_rate),
             loss='mse'
@@ -77,8 +75,8 @@ class DQNagent:
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    def load(self, name):
-        self.model.load_weights(name)
+    # def load(self, name):
+    #     self.model.load_weights(name)
 
     def save(self, name):
         self.model.save_weights(name)
@@ -89,18 +87,22 @@ def driver():
     env = RobotSimulation()
 
     for e in range(agent.no_episodes):
-        for time in range(5000):
-            old_state = env.get_state()
-            action = agent.get_action(old_state)
+        old_state = env.get_state()
+        action = agent.get_action(old_state)
 
-            reward, done = env.do_step(action)
-            new_state = env.get_state()
+        reward, done = env.do_step(action)
+        new_state = env.get_state()
 
-            agent.remember(old_state, action, reward, new_state, done)
+        agent.remember(old_state, action, reward, new_state, done)
 
-            if done:
-                env.reset_env()
+        if done:
+            env.reset_env()
+            if len(agent.memory) > agent.batch_size:
                 agent.train_model()
+
+        if e % 50 == 0:
+            agent.save(f"output_agent/episode_{e}_weights.hdf5")
+
 
 if __name__ == "__main__":
     driver()
