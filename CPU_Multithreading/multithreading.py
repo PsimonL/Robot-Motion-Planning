@@ -20,7 +20,7 @@ def worker2(result):
     result[0] = count_numbers(N // 2 + 1, N)
 
 
-def multiple_processes():
+def multiple_threads():
     mid = N // 2
     result1, result2 = multiprocessing.Array('i', 1), multiprocessing.Array('i', 1)
 
@@ -57,5 +57,5 @@ def single_thread():
 
 
 if __name__ == "__main__":
-    multiple_processes()
+    multiple_threads()
     single_thread()
