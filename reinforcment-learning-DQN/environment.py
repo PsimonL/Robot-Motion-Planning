@@ -78,26 +78,26 @@ class RobotSimulation:
         self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
 
     def ui_runner(self):
-        runner = True
+        # runner = True
+        # while runner:
+        print("Flag6")
+        self.clock.tick(self.FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
 
-        while runner:
-            self.clock.tick(self.FPS)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
+        self.screen.fill(self.BLACK)
 
-            self.screen.fill(self.BLACK)
+        pygame.draw.rect(self.screen, self.RED,
+                         pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
 
-            pygame.draw.rect(self.screen, self.RED,
-                             pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
+        for obstacle in self.obstacles:
+            pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
 
-            for obstacle in self.obstacles:
-                pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
-
-            if len(self.trail_points) > 1:
-                pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
-
-            pygame.display.update()
+        if len(self.trail_points) > 1:
+            pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
+        print("Flag7")
+        pygame.display.update()
 
     def do_step(self, action):
         self.frame_iteration += 1
@@ -107,6 +107,8 @@ class RobotSimulation:
                 quit()
 
         self.move_robot(action)
+
+        print("Flag4")
 
         game_over = False
         distance_to_finish = math.sqrt((self.finish_x - self.robot.x) ** 2 + (self.finish_y - self.robot.y) ** 2)
@@ -133,6 +135,8 @@ class RobotSimulation:
             self.reward = -100
             game_over = True
             return self.reward, game_over
+
+        print("Flag5")
 
         self.ui_runner()
         return self.reward, game_over

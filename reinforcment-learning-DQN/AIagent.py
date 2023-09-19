@@ -42,7 +42,9 @@ class DQNagent:
         ])
 
         model.compile(
-            optimizer=keras.optimizers.Adam(lr=self.learning_rate),
+            optimizer=keras.optimizers.Adam(
+                learning_rate=self.learning_rate
+            ),
             loss='mse'
         )
 
@@ -89,6 +91,10 @@ def driver():
     print("Flag2")
 
     for e in range(agent.no_episodes):
+        print("==================================================================")
+        print(f"EPISODE{e}")
+        print("==================================================================")
+
         # get current step
         old_state = env.get_state()
 
@@ -99,8 +105,6 @@ def driver():
 
         # perform action
         reward, done = env.do_step(action)
-
-        print("Flag4")
 
         # get new state after action
         new_state = env.get_state()
@@ -117,7 +121,7 @@ def driver():
 
         # save weights if the number of episodes is a multiple of 50
         if e % 50 == 0:
-            agent.save(f"output_agent/episode_{e}_weights.hdf5")
+            agent.save(f"agent_output/episode_{e}_weights.hdf5")
 
 
 if __name__ == "__main__":
