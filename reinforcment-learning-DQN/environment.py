@@ -19,7 +19,7 @@ class RobotSimulation:
         self.GREEN = (0, 255, 0)
 
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
-        pygame.display.set_caption("Automatic robot simulation")
+        pygame.display.set_caption("DQN Path Finding")
         self.clock = pygame.time.Clock()
 
         self.start_x, self.start_y, self.finish_x, self.finish_y = None, None, None, None
