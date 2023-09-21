@@ -14,8 +14,7 @@ from environment import RobotSimulation
 
 class DQNagent:
     def __init__(self):
-        self.state_size = 2  # state to zmienna x i y, PLUS: odległość (cel-pozycja aktualna),pozycja przeszkód <-
-        # narazie tyle
+        self.state_size = 3
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 1000
         self.no_episodes = 1000
@@ -77,8 +76,8 @@ class DQNagent:
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    # def load(self, name):
-    #     self.model.load_weights(name)
+    def load(self, name):
+        self.model.load_weights(name)
 
     def save(self, name):
         self.model.save_weights(name)
@@ -88,26 +87,21 @@ def driver():
     # initialize agent and env
     agent = DQNagent()
     env = RobotSimulation()
-    print("Flag2")
 
     for e in range(agent.no_episodes):
-        print("==================================================================")
         print(f"EPISODE{e}")
-        print("==================================================================")
 
         # get current step
-        old_state = env.get_state()
+        old_state = env.get_states()
 
         # choose action
         action = agent.get_action(old_state)
-
-        print("Flag3")
 
         # perform action
         reward, done = env.do_step(action)
 
         # get new state after action
-        new_state = env.get_state()
+        new_state = env.get_states()
 
         # remember feedback to train deep neural network
         agent.remember(old_state, action, reward, new_state, done)
@@ -116,8 +110,8 @@ def driver():
             # if true reset env
             env.reset_env()
             # check if enough data to perform learning
-            if len(agent.memory) > agent.batch_size:
-                agent.train_model()
+            # if len(agent.memory) > agent.batch_size:
+            agent.train_model()
 
         # save weights if the number of episodes is a multiple of 50
         if e % 50 == 0:
@@ -125,5 +119,4 @@ def driver():
 
 
 if __name__ == "__main__":
-    print("Flag1")
     driver()
