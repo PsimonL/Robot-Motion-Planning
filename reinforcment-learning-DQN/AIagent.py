@@ -1,4 +1,5 @@
 import random
+import os
 import torch
 import environment
 import tensorflow as tf
@@ -16,9 +17,10 @@ class DQNagent:
     def __init__(self):
         self.state_size = 3
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
-        self.batch_size = 1000
+        self.batch_size = 32
         self.no_episodes = 100
         self.max_memory = 100_000
+        self.output_dir = "agent_output/"
 
         self.memory = deque(maxlen=3000)
         self.gamma = 0.95
@@ -61,22 +63,26 @@ class DQNagent:
         return np.argmax(action_values[0])
 
     def train_model(self):
-        print("TRAIN MODEL CALL")
+        print("TRAIN MODEL CALL 1")
         if len(self.memory) > self.batch_size:
             minibatch = random.sample(self.memory, self.batch_size)
         else:
             minibatch = self.memory
-
+        print("TRAIN MODEL CALL 2")
+        print(minibatch)
         for state, action, reward, next_sate, done in minibatch:
             Q_new = reward
             if not done:
+                print("TRAIN MODEL CALL 3")
                 Q_new = (reward + self.gamma * np.amax(self.model.predict(next_sate)[0]))  # Bellman
+            print("TRAIN MODEL CALL 4")
             target = self.model.predict(state)
             target[0][action] = Q_new
 
             self.model.fit(state, target, epochs=1, verbose=0)
 
         if self.epsilon > self.epsilon_min:
+            print("TRAIN MODEL CALL 5")
             self.epsilon *= self.epsilon_decay
 
     def load(self, name):
@@ -107,6 +113,9 @@ def driver():
         # get new state after action
         new_state = env.get_states()
 
+        # reshape to fit TensorFlow model input
+        new_state = np.reshape(new_state, [1, agent.state_size])
+
         # remember feedback to train deep neural network
         agent.remember(old_state, action, reward, new_state, done)
 
@@ -119,7 +128,9 @@ def driver():
 
         # save weights if the number of episodes is a multiple of 50
         if e % 30 == 0:
-            agent.save(f"agent_output/episode_{e}_weights.hdf5")
+            if not os.path.exists(agent.output_dir):
+                os.makedirs(agent.output_dir)
+            agent.save(f"{agent.output_dir}episode_{e}_weights.hdf5")
 
 
 if __name__ == "__main__":
