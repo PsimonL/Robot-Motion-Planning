@@ -17,7 +17,7 @@ class DQNagent:
         self.state_size = 3
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 1000
-        self.no_episodes = 1000
+        self.no_episodes = 100
         self.max_memory = 100_000
 
         self.memory = deque(maxlen=3000)
@@ -50,15 +50,18 @@ class DQNagent:
         return model
 
     def remember(self, state, action, reward, next_sate, done):  # done for episode
+        print("REMEMBER CALL")
         self.memory.append((state, action, reward, next_sate, done))
 
     def get_action(self, state):
+        print("GET ACTION CALL")
         if np.random.rand() <= self.epsilon:  # check numpy in if, if it suits
             return random.randrange(self.action_size)
         action_values = self.model.predict(state)
         return np.argmax(action_values[0])
 
     def train_model(self):
+        print("TRAIN MODEL CALL")
         if len(self.memory) > self.batch_size:
             minibatch = random.sample(self.memory, self.batch_size)
         else:
@@ -89,6 +92,7 @@ def driver():
     env = RobotSimulation()
 
     for e in range(agent.no_episodes):
+        print(f"=============================================================")
         print(f"EPISODE{e}")
 
         # get current step
@@ -110,8 +114,8 @@ def driver():
             # if true reset env
             env.reset_env()
             # check if enough data to perform learning
-            # if len(agent.memory) > agent.batch_size:
-            agent.train_model()
+        # if len(agent.memory) > agent.batch_size:
+        agent.train_model()
 
         # save weights if the number of episodes is a multiple of 50
         if e % 30 == 0:
