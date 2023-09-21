@@ -114,7 +114,7 @@ def driver():
             agent.train_model()
 
         # save weights if the number of episodes is a multiple of 50
-        if e % 50 == 0:
+        if e % 30 == 0:
             agent.save(f"agent_output/episode_{e}_weights.hdf5")
 
 
