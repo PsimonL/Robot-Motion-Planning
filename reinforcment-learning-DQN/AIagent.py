@@ -35,12 +35,16 @@ class DQNagent:
         self.model = self._build_model()
 
     def _build_model(self):
-        model = keras.models.Sequential([
-            keras.layers.Input(shape=(self.state_size,)),
-            keras.layers.Dense(64, activation='relu'),
-            keras.layers.Dense(64, activation='relu'),
-            keras.layers.Dense(self.action_size, activation='linear')
-        ])
+        # model = keras.models.Sequential([
+        #     keras.layers.Input(shape=(self.state_size,)),
+        #     keras.layers.Dense(64, activation='relu'),
+        #     keras.layers.Dense(64, activation='relu'),
+        #     keras.layers.Dense(self.action_size, activation='linear')
+        # ])
+        model = keras.models.Sequential()
+        model.add(keras.layers.Dense(24, input_dim=self.state_size, activation='relu'))
+        model.add(keras.layers.Dense(24, activation='relu'))
+        model.add(keras.layers.Dense(self.action_size, activation='linear'))
 
         model.compile(
             optimizer=keras.optimizers.Adam(
@@ -52,11 +56,9 @@ class DQNagent:
         return model
 
     def remember(self, state, action, reward, next_sate, done):  # done for episode
-        print("REMEMBER CALL")
         self.memory.append((state, action, reward, next_sate, done))
 
     def get_action(self, state):
-        print("GET ACTION CALL")
         if np.random.rand() <= self.epsilon:  # check numpy in if, if it suits
             return random.randrange(self.action_size)
         action_values = self.model.predict(state)
@@ -78,11 +80,9 @@ class DQNagent:
             print("TRAIN MODEL CALL 4")
             target = self.model.predict(state)
             target[0][action] = Q_new
-
             self.model.fit(state, target, epochs=1, verbose=0)
 
         if self.epsilon > self.epsilon_min:
-            print("TRAIN MODEL CALL 5")
             self.epsilon *= self.epsilon_decay
 
     def load(self, name):
@@ -115,6 +115,7 @@ def driver():
 
         # reshape to fit TensorFlow model input
         new_state = np.reshape(new_state, [1, agent.state_size])
+        old_state = np.reshape(old_state, [1, agent.state_size])
 
         # remember feedback to train deep neural network
         agent.remember(old_state, action, reward, new_state, done)

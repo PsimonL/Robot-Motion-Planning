@@ -34,7 +34,6 @@ class RobotSimulation:
         return math.dist([self.robot.x, self.robot.y], [self.finish_x, self.finish_y])
 
     def get_states(self):
-        print("GET STATES CALL")
         return self.robot.x, self.robot.y, self.distance_to_finish()
 
     def reset_env(self):
@@ -106,7 +105,6 @@ class RobotSimulation:
         pygame.display.update()
 
     def do_step(self, action):
-        print("DO STEPS CALL")
         self.frame_iteration += 1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
