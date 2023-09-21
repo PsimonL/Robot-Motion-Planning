@@ -92,7 +92,7 @@ def driver():
         print(f"EPISODE{e}")
 
         # get current step
-        old_state = env.get_state()
+        old_state = env.get_states()
 
         # choose action
         action = agent.get_action(old_state)
@@ -101,7 +101,7 @@ def driver():
         reward, done = env.do_step(action)
 
         # get new state after action
-        new_state = env.get_state()
+        new_state = env.get_states()
 
         # remember feedback to train deep neural network
         agent.remember(old_state, action, reward, new_state, done)
