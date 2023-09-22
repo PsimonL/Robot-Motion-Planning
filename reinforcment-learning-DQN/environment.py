@@ -10,7 +10,7 @@ class RobotSimulation:
 
         self.SCREEN_WIDTH = 800
         self.SCREEN_HEIGHT = 800
-        self.FPS = 80
+        self.FPS = 40
 
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
@@ -23,10 +23,10 @@ class RobotSimulation:
         self.clock = pygame.time.Clock()
 
         self.start_x, self.start_y, self.finish_x, self.finish_y = None, None, None, None
+        self.correction_xy_start = None
         self.reward, self.frame_iteration = 0, 0
         self.target_distance = None
         self.trail_points, self.robot, self.obstacles = None, None, None
-        self.flag = None
 
         self.reset_env()
 
@@ -37,49 +37,49 @@ class RobotSimulation:
         return self.robot.x, self.robot.y, self.distance_to_finish()
 
     def reset_env(self):
+        print("RESET ENV CALL")
         self.frame_iteration = 0
 
-        self.start_x = 0
-        self.start_y = 0
-        self.finish_x = 150
-        self.finish_y = 150
+        self.start_x = 500
+        self.start_y = 500
+        self.finish_x = 750
+        self.finish_y = 750
         self.target_distance = 0
 
         self.reward = 0
-        self.robot = shapes.FloatRect(self.start_x, self.start_y, 25, 25)
+        self.correction_xy_start = 25
+        self.robot = shapes.FloatRect(self.start_x, self.start_y, self.correction_xy_start, self.correction_xy_start)
 
         self.trail_points = []
 
         self.obstacles = [
-            shapes.Obstacle(200, 100, 100, 50),
-            shapes.Obstacle(400, 300, 50, 100)
+            # shapes.Obstacle(200, 100, 100, 50),
+            # shapes.Obstacle(400, 300, 50, 100)
         ]
-
-        self.flag = 0
 
     def move_robot(self, action):
         dx, dy = 0, 0
 
-        d = 5
+        dd = 5
 
         if action == 1:  # move left - L
-            dx = -d
+            dx = -dd
         elif action == 2:  # move right - R
-            dx = d
+            dx = dd
         elif action == 3:  # move up - U
-            dy = -d
+            dy = -dd
         elif action == 4:  # move down - D
-            dy = d
+            dy = dd
         elif action == 5:  # move up and left - UL
-            dx, dy = -d, -d
+            dx, dy = -dd, -dd
         elif action == 6:  # move up and right - UR
-            dx, dy = d, -d
+            dx, dy = dd, -dd
         elif action == 7:  # move down and left - DL
-            dx, dy = -d, d
+            dx, dy = -dd, dd
         elif action == 8:  # move down and right - DR
-            dx, dy = d, d
+            dx, dy = dd, dd
 
-        speed = d
+        speed = dd
         self.robot.x = max(0, min(self.SCREEN_WIDTH - self.robot.width, self.robot.x + dx * speed))
         self.robot.y = max(0, min(self.SCREEN_HEIGHT - self.robot.height, self.robot.y + dy * speed))
         self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
@@ -93,6 +93,10 @@ class RobotSimulation:
                 pygame.quit()
 
         self.screen.fill(self.BLACK)
+
+        pygame.draw.circle(self.screen, self.YELLOW, (self.start_x + self.correction_xy_start,
+                                                      self.start_y + self.correction_xy_start), 5)
+        pygame.draw.circle(self.screen, self.GREEN, (self.finish_x, self.finish_y), 5)
 
         pygame.draw.rect(self.screen, self.RED,
                          pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
