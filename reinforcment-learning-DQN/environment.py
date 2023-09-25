@@ -1,5 +1,6 @@
 import pygame
 import math
+import numpy as np
 import shapes
 import geometry
 
@@ -34,7 +35,7 @@ class RobotSimulation:
         return math.dist([self.robot.x, self.robot.y], [self.finish_x, self.finish_y])
 
     def get_states(self):
-        return self.robot.x, self.robot.y, self.distance_to_finish()
+        return np.array([self.robot.x, self.robot.y, self.distance_to_finish()])
 
     def reset_env(self):
         print("RESET ENV CALL")

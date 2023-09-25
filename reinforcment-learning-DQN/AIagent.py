@@ -17,9 +17,10 @@ class DQNagent:
     def __init__(self):
         self.state_size = 3
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
-        self.batch_size = 10
-        self.no_episodes = 10_000
+        self.batch_size = 1
+        self.no_episodes = 100
         self.max_memory = 100_000
+
         self.output_dir = "agent_output/"
 
         self.memory = deque(maxlen=3000)
@@ -28,6 +29,7 @@ class DQNagent:
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.01
         self.learning_rate = 0.001
+        self.loss = []
 
         self.start_point = (100, 100)
         self.end_point = (500, 500)
@@ -61,15 +63,17 @@ class DQNagent:
     def get_action(self, state):
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
-        action_values = self.model.predict(state)
+        print("=====================================================")
+        print(f"STATE = {state}; STATE.SHAPE = {state.shape}")
+        action_values = self.model.predict(state.reshape(1, -1))
         return np.argmax(action_values[0])
 
     def train_model(self):
         if len(self.memory) > self.batch_size:
-            print("FLAG if len(self.memory) > self.batch_size:")
+            # print("FLAG if len(self.memory) > self.batch_size:")
             minibatch = random.sample(self.memory, self.batch_size)
         else:
-            print("FLAG else:")
+            # print("FLAG else:")
             minibatch = self.memory
         print(f"minibatch = {minibatch}")
 
@@ -79,7 +83,8 @@ class DQNagent:
                 Q_new = (reward + self.gamma * np.amax(self.model.predict(next_sate)[0]))  # Bellman
             target = self.model.predict(state)
             target[0][action] = Q_new
-            self.model.fit(state, target, epochs=1, verbose=1)  # verbose=0
+            history = self.model.fit(state, target, epochs=1, verbose=1)  # verbose=0
+            self.loss = history.history['loss']
 
         # for i in range(len(minibatch)):
         #     state, action, reward, next_state, done = minibatch[i]
@@ -109,7 +114,8 @@ def driver():
     if not os.path.exists(agent.output_dir):
         os.makedirs(agent.output_dir)
 
-    epsilon_values_file = open(f"{agent.output_dir}epsilon.txt", "w")
+    epsilon_values_file = open(f"{agent.output_dir}epsilon_values.txt", "w")
+    loss_values_file = open(f"{agent.output_dir}loss_values.txt", "w")
 
     for episode in range(agent.no_episodes):
         print(f"EPISODE{episode}")
@@ -133,20 +139,20 @@ def driver():
         # remember feedback to train deep neural network
         agent.remember(old_state, action, reward, new_state, done)
 
-        epsilon_values_file.write(f"episode - {episode}/{agent.no_episodes}, "
-                                  f"epsilon = {agent.epsilon}\n")
-
         if done:
             # if true reset env
             env.reset_env()
             # check if enough data to perform learning
         if len(agent.memory) > agent.batch_size:
             agent.train_model()
+            loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss[0]}\n")
+            epsilon_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"epsilon = {agent.epsilon}\n")
 
         # save weights if the number of episodes is a multiple of 50
         if episode % 30 == 0:
             agent.save(f"{agent.output_dir}episode_{episode}_weights.hdf5")
 
+    loss_values_file.close()
     epsilon_values_file.close()
 
 
