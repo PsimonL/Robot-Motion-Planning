@@ -15,7 +15,7 @@ from environment import RobotSimulation
 
 class DQNagent:
     def __init__(self):
-        self.state_size = 3
+        self.state_size = 5
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 1
         self.no_episodes = 100
@@ -61,7 +61,8 @@ class DQNagent:
         self.memory.append((state, action, reward, next_sate, done))
 
     def get_action(self, state):
-        if np.random.rand() <= self.epsilon:
+        # print(f"np.random.rand() = {np.random.rand()}")
+        if np.random.rand() <= self.epsilon: # TODO
             return random.randrange(self.action_size)
         print("=====================================================")
         print(f"STATE = {state}; STATE.SHAPE = {state.shape}")
@@ -85,16 +86,6 @@ class DQNagent:
             target[0][action] = Q_new
             history = self.model.fit(state, target, epochs=1, verbose=1)  # verbose=0
             self.loss = history.history['loss']
-
-        # for i in range(len(minibatch)):
-        #     state, action, reward, next_state, done = minibatch[i]
-        #     Q_new = reward
-        #     if not done:
-        #         Q_new = (reward + self.gamma * np.amax(self.model.predict(next_state)[0]))  # Bellman
-        #     target = self.model.predict(state)
-        #     target[0][action] = Q_new
-        #     self.model.fit(state, target, epochs=1, verbose=0)
-        #     print("TRAIN MODEL CALL 5")
 
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay

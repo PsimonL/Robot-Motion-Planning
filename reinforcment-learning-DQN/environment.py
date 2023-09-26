@@ -26,16 +26,14 @@ class RobotSimulation:
         self.start_x, self.start_y, self.finish_x, self.finish_y = None, None, None, None
         self.correction_xy_start = None
         self.reward, self.frame_iteration = 0, 0
-        self.target_distance = None
         self.trail_points, self.robot, self.obstacles = None, None, None
 
+        self.flag_x, self.flag_y = None, None
+
+        self.previous_distance_to_finish = float('inf')
+        self.current_distance_to_finish = float('inf')
+
         self.reset_env()
-
-    def distance_to_finish(self):
-        return math.dist([self.robot.x, self.robot.y], [self.finish_x, self.finish_y])
-
-    def get_states(self):
-        return np.array([self.robot.x, self.robot.y, self.distance_to_finish()])
 
     def reset_env(self):
         print("RESET ENV CALL")
@@ -45,11 +43,13 @@ class RobotSimulation:
         self.start_y = 500
         self.finish_x = 750
         self.finish_y = 750
-        self.target_distance = 0
 
         self.reward = 0
         self.correction_xy_start = 25
         self.robot = shapes.FloatRect(self.start_x, self.start_y, self.correction_xy_start, self.correction_xy_start)
+
+        self.flag_x = 2
+        self.flag_y = 2
 
         self.trail_points = []
 
@@ -57,6 +57,20 @@ class RobotSimulation:
             # shapes.Obstacle(200, 100, 100, 50),
             # shapes.Obstacle(400, 300, 50, 100)
         ]
+
+    def obstacles_placement(self):  # add states that gives info about obstacles
+        pass
+
+    def current_distance_to_aim(self):
+        return math.dist([self.robot.x, self.robot.y], [self.finish_x, self.finish_y])
+
+    def current_direction_to_aim(self):
+        # 0 - go right, 1 - go left, 2 - don't move
+        self.flag_x = 0 if self.robot.x < self.finish_x else (1 if self.robot.x > self.finish_x else 2)
+        self.flag_y = 0 if self.robot.y < self.finish_y else (1 if self.robot.y > self.finish_y else 2)
+
+    def get_states(self):
+        return np.array([self.robot.x, self.robot.y, self.current_distance_to_finish, self.flag_x, self.flag_y])
 
     def move_robot(self, action):
         dx, dy = 0, 0
@@ -120,25 +134,41 @@ class RobotSimulation:
 
         reset_flag = False
 
-        # reward for becoming closer to aim
         # end if finish
-        if self.distance_to_finish() <= 5:
+        if self.current_distance_to_finish <= 5:
             self.reward = 100
             reset_flag = True
             return self.reward, reset_flag
+        else:
+            self.reward = 0
 
-        self.reward = 100 / self.distance_to_finish()
+        # penalty/price for direction
+        self.current_direction_to_aim()
+        if self.flag_x == 2 or self.flag_y == 2:
+            self.reward += 30
+        else:
+            self.reward += -30
+
+        # if robot getting closer
+        distance_difference = self.previous_distance_to_finish - self.current_distance_to_finish
+        if distance_difference < 0:
+            self.reward += -10
+        elif distance_difference > 0:
+            self.reward += 100
+        else:
+            self.reward += 0
+        self.previous_distance_to_finish = self.current_distance_to_finish
 
         # collision penalty
         for obstacle in self.obstacles:
             if geometry.check_collision(self.robot, obstacle.rect):
-                self.reward = -75
+                self.reward += -75
                 reset_flag = True
                 return self.reward, reset_flag
 
         # too long time penalty
         if len(self.trail_points) > 1000:
-            self.reward = -100
+            self.reward += -100
             reset_flag = True
             return self.reward, reset_flag
 
