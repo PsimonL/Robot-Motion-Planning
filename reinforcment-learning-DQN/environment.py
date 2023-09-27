@@ -25,13 +25,13 @@ class RobotSimulation:
 
         self.start_x, self.start_y, self.finish_x, self.finish_y = None, None, None, None
         self.correction_xy_start = None
-        self.reward, self.frame_iteration = 0, 0
+        self.reward, self.frame_iteration = 0, -1
         self.trail_points, self.robot, self.obstacles = None, None, None
 
         self.flag_x, self.flag_y = None, None
 
-        self.previous_distance_to_finish = float('inf')
-        self.current_distance_to_finish = float('inf')
+        self.previous_distance_to_finish = 6
+        self.current_distance_to_finish = 6
 
         self.reset_env()
 
@@ -39,13 +39,13 @@ class RobotSimulation:
         print("RESET ENV CALL")
         self.frame_iteration = 0
 
-        self.start_x = 500
+        self.start_x = 200
         self.start_y = 500
-        self.finish_x = 750
-        self.finish_y = 750
+        self.finish_x = 400
+        self.finish_y = 500
 
         self.reward = 0
-        self.correction_xy_start = 25
+        self.correction_xy_start = 20
         self.robot = shapes.FloatRect(self.start_x, self.start_y, self.correction_xy_start, self.correction_xy_start)
 
         self.flag_x = 2
@@ -58,18 +58,29 @@ class RobotSimulation:
             # shapes.Obstacle(400, 300, 50, 100)
         ]
 
-    def obstacles_placement(self):  # add states that gives info about obstacles
+    def obstacles_placement(self):  # TODO: add states that gives info about obstacles
         pass
 
     def current_distance_to_aim(self):
-        return math.dist([self.robot.x, self.robot.y], [self.finish_x, self.finish_y])
+        self.current_distance_to_finish = math.dist([self.robot.x, self.robot.y], [self.finish_x, self.finish_y])
 
     def current_direction_to_aim(self):
-        # 0 - go right, 1 - go left, 2 - don't move
-        self.flag_x = 0 if self.robot.x < self.finish_x else (1 if self.robot.x > self.finish_x else 2)
-        self.flag_y = 0 if self.robot.y < self.finish_y else (1 if self.robot.y > self.finish_y else 2)
+        # 0 - increment, 1 - decrement, 2 - no change
+        if self.robot.x < self.finish_x:
+            self.flag_x = 0
+        if self.robot.y < self.finish_y:
+            self.flag_y = 0
+        if self.robot.x > self.finish_x:
+            self.flag_x = 1
+        if self.robot.y > self.finish_y:
+            self.flag_y = 1
+        if self.robot.x == self.finish_x:
+            self.flag_x = 2
+        if self.robot.y == self.finish_y:
+            self.flag_y = 2
 
     def get_states(self):
+        print(f"GET_STATES() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
         return np.array([self.robot.x, self.robot.y, self.current_distance_to_finish, self.flag_x, self.flag_y])
 
     def move_robot(self, action):
@@ -97,6 +108,7 @@ class RobotSimulation:
         speed = dd
         self.robot.x = max(0, min(self.SCREEN_WIDTH - self.robot.width, self.robot.x + dx * speed))
         self.robot.y = max(0, min(self.SCREEN_HEIGHT - self.robot.height, self.robot.y + dy * speed))
+        print(f"MOVE_ROBOT() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
         self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
 
     def ui_runner(self):
@@ -109,9 +121,8 @@ class RobotSimulation:
 
         self.screen.fill(self.BLACK)
 
-        pygame.draw.circle(self.screen, self.YELLOW, (self.start_x + self.correction_xy_start,
-                                                      self.start_y + self.correction_xy_start), 5)
-        pygame.draw.circle(self.screen, self.GREEN, (self.finish_x, self.finish_y), 5)
+        pygame.draw.circle(self.screen, self.YELLOW, (self.start_x, self.start_y), 10)
+        pygame.draw.circle(self.screen, self.GREEN, (self.finish_x, self.finish_y), 10)
 
         pygame.draw.rect(self.screen, self.RED,
                          pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
@@ -129,12 +140,13 @@ class RobotSimulation:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-
+        print(f"frame {self.frame_iteration}")
         self.move_robot(action)
 
         reset_flag = False
 
         # end if finish
+        self.current_distance_to_aim()
         if self.current_distance_to_finish <= 5:
             self.reward = 100
             reset_flag = True
@@ -151,6 +163,7 @@ class RobotSimulation:
 
         # if robot getting closer
         distance_difference = self.previous_distance_to_finish - self.current_distance_to_finish
+        print(f"distance_difference = {distance_difference}")
         if distance_difference < 0:
             self.reward += -10
         elif distance_difference > 0:
@@ -167,7 +180,7 @@ class RobotSimulation:
                 return self.reward, reset_flag
 
         # too long time penalty
-        if len(self.trail_points) > 1000:
+        if len(self.trail_points) > 100:
             self.reward += -100
             reset_flag = True
             return self.reward, reset_flag
