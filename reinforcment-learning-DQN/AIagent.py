@@ -1,9 +1,9 @@
 import random
 import os
-import torch
-import environment
-import tensorflow as tf
-import random as rd
+# import torch
+# import environment
+# import tensorflow as tf
+# import random as rd
 import numpy as np
 import keras.models
 import keras.layers
@@ -18,8 +18,8 @@ class DQNagent:
         self.state_size = 5
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 1
-        self.no_episodes = 100
-        self.max_memory = 100_000
+        self.no_episodes = 1000
+        # self.max_memory = 100_000
 
         self.output_dir = "agent_output/"
 
@@ -30,13 +30,14 @@ class DQNagent:
         self.epsilon_min = 0.01
         self.learning_rate = 0.001
         self.loss = []
+        self.total_reward = 0
 
         self.start_point = (100, 100)
         self.end_point = (500, 500)
 
         self.model = self._build_model()
 
-    def _build_model(self):
+    def _build_model(self):  # Predict future reward using regression for DQN agent.
         # model = keras.models.Sequential([
         #     keras.layers.Input(shape=(self.state_size,)),
         #     keras.layers.Dense(64, activation='relu'),
@@ -60,28 +61,27 @@ class DQNagent:
     def remember(self, state, action, reward, next_sate, done):  # done for episode
         self.memory.append((state, action, reward, next_sate, done))
 
-    def get_action(self, state):
+    def get_action(self, state):  # Based on epsilon explore randomly or exploit current data.
         # print(f"np.random.rand() = {np.random.rand()}")
-        if np.random.rand() <= self.epsilon: # TODO
+        if np.random.rand() <= self.epsilon:  # Exploration mode.
             return random.randrange(self.action_size)
         print("=====================================================")
         print(f"STATE = {state}; STATE.SHAPE = {state.shape}")
-        action_values = self.model.predict(state.reshape(1, -1))
+        action_values = self.model.predict(state.reshape(1, -1))  # Exploit, over epsilon decay, more exploration.
         return np.argmax(action_values[0])
 
     def train_model(self):
-        if len(self.memory) > self.batch_size:
-            # print("FLAG if len(self.memory) > self.batch_size:")
-            minibatch = random.sample(self.memory, self.batch_size)
-        else:
-            # print("FLAG else:")
-            minibatch = self.memory
+        # if len(self.memory) > self.batch_size:
+        #     minibatch = random.sample(self.memory, self.batch_size)
+        # else:
+        #     minibatch = self.memory
+        minibatch = random.sample(self.memory, self.batch_size)
         print(f"minibatch = {minibatch}")
 
         for state, action, reward, next_sate, done in minibatch:
             Q_new = reward
             if not done:
-                Q_new = (reward + self.gamma * np.amax(self.model.predict(next_sate)[0]))  # Bellman
+                Q_new = (reward + self.gamma * np.amax(self.model.predict(next_sate)[0]))  # Bellman Equation
             target = self.model.predict(state)
             target[0][action] = Q_new
             history = self.model.fit(state, target, epochs=1, verbose=1)  # verbose=0
@@ -107,6 +107,8 @@ def driver():
 
     epsilon_values_file = open(f"{agent.output_dir}epsilon_values.txt", "w")
     loss_values_file = open(f"{agent.output_dir}loss_values.txt", "w")
+    accumulative_reward_values_file = open(f"{agent.output_dir}accumulative_reward_values.txt", "w")
+    reward_values_per_episode_file = open(f"{agent.output_dir}reward_values_per_episode_file.txt", "w")
 
     for episode in range(agent.no_episodes):
         print(f"EPISODE{episode}")
@@ -119,6 +121,7 @@ def driver():
 
         # perform action
         reward, done = env.do_step(action)
+        agent.total_reward += reward
 
         # get new state after action
         new_state = env.get_states()
@@ -138,13 +141,17 @@ def driver():
             agent.train_model()
             loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss[0]}\n")
             epsilon_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"epsilon = {agent.epsilon}\n")
+            accumulative_reward_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"reward = {agent.total_reward}\n")
+            reward_values_per_episode_file.write(f"episode - {episode}/{agent.no_episodes}, "f"reward = {reward}\n")
 
         # save weights if the number of episodes is a multiple of 50
         if episode % 30 == 0:
-            agent.save(f"{agent.output_dir}episode_{episode}_weights.hdf5")
+            agent.save(f"{agent.output_dir}weights/episode_{episode}_weights.hdf5")
 
     loss_values_file.close()
     epsilon_values_file.close()
+    accumulative_reward_values_file.close()
+    reward_values_per_episode_file.close()
 
 
 if __name__ == "__main__":
