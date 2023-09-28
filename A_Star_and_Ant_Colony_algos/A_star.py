@@ -1,47 +1,70 @@
 import pygame
 import math
-import queue
 
-import shapes
+WIDTH = 600
+HEIGHT = 600
 
-class A_star:
-    def __int__(self):
-        pygame.init()
+NODE_SIZE = 2
 
-        self.SCREEN_WIDTH = 800
-        self.SCREEN_HEIGHT = 800
-        self.FPS = 80
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 
-        self.WHITE = (255, 255, 255)
-        self.BLACK = (0, 0, 0)
-        self.RED = (255, 0, 0)
-        self.YELLOW = (255, 255, 0)
-        self.GREEN = (0, 255, 0)
-        self.FUCHSIA = (255, 0, 255)
-        self.GOLD = (255, 215, 0)
-        self.ORANGE = (255, 165, 0)
-        self.TURQUOISE = (0, 255, 255)
-        self.LIGHT_BLUE = (0, 180, 255)
 
-        self.start_x, self.start_y = 10, 10
+class Nodes:
+    def __init__(self, x, y, row, col):
+        self.x, self.y = x, y
+        self.row, self.col = row, col  # multiple of 5, distance on diangonals will be 7 and horizontal as well as vertical would be 5
+        # G - distance from current node to start node , H - distance from current node to end node
+        self.G, self.H = None, None
+        self.F = None  # F (node in nodes) = G (node in nodes) + H (node in nodes)
+        self.checked = None
 
-        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
-        pygame.display.set_caption("A* Path Finding")
-        self.clock = pygame.time.Clock()
 
-        self.robot = shapes.FloatRect(self.start_x, self.start_y, 25, 25)
+def create_grid():
+    margin_x = 10
+    margin_y = 10
 
-        self.obstacles = [
-            shapes.Obstacle(200, 100, 100, 50),
-            shapes.Obstacle(400, 300, 50, 100)
-        ]
+    num_rows = (WIDTH - margin_x) // 5
+    num_cols = (HEIGHT - margin_y) // 5
 
-    def funcA(self):
-        pass
+    print(f"num_rows = {num_rows}")
+    print(f"num_cols = {num_cols}")
 
-    def funcB(self):
-        pass
+    grid = []
+    for row in range(num_rows):
+        for col in range(num_cols):
+            x = margin_x + col * 30
+            y = margin_y + row * 30
+            node = Nodes(x, y, row, col)
+            grid.append(node)
+
+    node_id = 0
+    for node in grid:
+        print(f"Node {node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
+        node_id += 1
+
+    return grid
+
+
+def ui_runner():
+    grid = create_grid()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        screen.fill(BLACK)
+
+        for node in grid:
+            pygame.draw.circle(screen, WHITE, (node.x, node.y), NODE_SIZE)
+
+        pygame.display.update()
+
+    pygame.quit()
 
 
 if __name__ == "__main__":
-    path = A_star()
+    ui_runner()
