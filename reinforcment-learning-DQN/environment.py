@@ -9,9 +9,9 @@ class RobotSimulation:
     def __init__(self):
         pygame.init()
 
-        self.SCREEN_WIDTH = 800
-        self.SCREEN_HEIGHT = 800
-        self.FPS = 40
+        self.SCREEN_WIDTH = 700
+        self.SCREEN_HEIGHT = 700
+        self.FPS = 600
 
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
@@ -24,6 +24,7 @@ class RobotSimulation:
         self.clock = pygame.time.Clock()
 
         self.start_x, self.start_y, self.finish_x, self.finish_y = None, None, None, None
+        self.time_penalty_margin = None
         self.correction_xy_start = None
         self.reward, self.frame_iteration = 0, -1
         self.trail_points, self.robot, self.obstacles = None, None, None
@@ -39,12 +40,13 @@ class RobotSimulation:
         print("RESET ENV CALL")
         self.frame_iteration = 0
 
-        self.start_x = 200
-        self.start_y = 500
-        self.finish_x = 400
-        self.finish_y = 500
+        self.start_x = 150
+        self.start_y = 350
+        self.finish_x = 600
+        self.finish_y = 350
 
         self.reward = 0
+        self.time_penalty_margin = 100
         self.correction_xy_start = 20
         self.robot = shapes.FloatRect(self.start_x, self.start_y, self.correction_xy_start, self.correction_xy_start)
 
@@ -112,8 +114,6 @@ class RobotSimulation:
         self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
 
     def ui_runner(self):
-        # runner = True
-        # while runner:
         self.clock.tick(self.FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -144,13 +144,15 @@ class RobotSimulation:
         self.move_robot(action)
 
         reset_flag = False
+        game_finished = False
 
         # end if finish
         self.current_distance_to_aim()
         if self.current_distance_to_finish <= 5:
             self.reward = 100
             reset_flag = True
-            return self.reward, reset_flag
+            game_finished = True
+            return self.reward, reset_flag, game_finished
         else:
             self.reward = 0
 
@@ -177,13 +179,13 @@ class RobotSimulation:
             if geometry.check_collision(self.robot, obstacle.rect):
                 self.reward += -75
                 reset_flag = True
-                return self.reward, reset_flag
+                return self.reward, reset_flag, game_finished
 
         # too long time penalty
-        if len(self.trail_points) > 100:
+        if len(self.trail_points) > self.time_penalty_margin:
             self.reward += -100
             reset_flag = True
-            return self.reward, reset_flag
+            return self.reward, reset_flag, game_finished
 
         self.ui_runner()
-        return self.reward, reset_flag
+        return self.reward, reset_flag, game_finished

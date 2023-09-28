@@ -18,7 +18,7 @@ class DQNagent:
         self.state_size = 5
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 1
-        self.no_episodes = 1000
+        self.no_episodes = 100
         # self.max_memory = 100_000
 
         self.output_dir = "agent_output/"
@@ -30,11 +30,8 @@ class DQNagent:
         self.epsilon_min = 0.01
         self.learning_rate = 0.001
         self.loss = []
-        self.total_reward = 0
-
-        self.start_point = (100, 100)
-        self.end_point = (500, 500)
-
+        self.reward_per_episode = 0
+        self.accumulative_reward = 0
         self.model = self._build_model()
 
     def _build_model(self):  # Predict future reward using regression for DQN agent.
@@ -62,7 +59,6 @@ class DQNagent:
         self.memory.append((state, action, reward, next_sate, done))
 
     def get_action(self, state):  # Based on epsilon explore randomly or exploit current data.
-        # print(f"np.random.rand() = {np.random.rand()}")
         if np.random.rand() <= self.epsilon:  # Exploration mode.
             return random.randrange(self.action_size)
         print("=====================================================")
@@ -109,45 +105,61 @@ def driver():
     loss_values_file = open(f"{agent.output_dir}loss_values.txt", "w")
     accumulative_reward_values_file = open(f"{agent.output_dir}accumulative_reward_values.txt", "w")
     reward_values_per_episode_file = open(f"{agent.output_dir}reward_values_per_episode_file.txt", "w")
+    no_finished_games_file = open(f"{agent.output_dir}no_finished_games_file.txt", "w")
 
     for episode in range(agent.no_episodes):
         print(f"EPISODE{episode}")
 
-        # get current step
-        old_state = env.get_states()
+        agent.accumulative_reward += agent.reward_per_episode
+        accumulative_reward_values_file.write(
+            f"episode - {episode}/{agent.no_episodes}, "f"reward = {agent.accumulative_reward}\n")
+        reward_values_per_episode_file.write(
+            f"episode - {episode}/{agent.no_episodes}, "f"reward = {agent.reward_per_episode}\n")
+        agent.reward_per_episode = 0
 
-        # choose action
-        action = agent.get_action(old_state)
+        # Episode lasts until done returns True flag and penalty is given or if aim is reached
+        while True:
+            # get current step
+            old_state = env.get_states()
 
-        # perform action
-        reward, done = env.do_step(action)
-        agent.total_reward += reward
+            # choose action
+            action = agent.get_action(old_state)
 
-        # get new state after action
-        new_state = env.get_states()
+            # perform action
+            reward, done, game_finished = env.do_step(action)
 
-        # reshape to fit TensorFlow model input
-        new_state = np.reshape(new_state, [1, agent.state_size])
-        old_state = np.reshape(old_state, [1, agent.state_size])
+            if game_finished:
+                no_finished_games_file.write(f"episode - {episode}/{agent.no_episodes}, STATUS: AIM REACHED\n")
 
-        # remember feedback to train deep neural network
-        agent.remember(old_state, action, reward, new_state, done)
+            agent.reward_per_episode += reward
 
-        if done:
-            # if true reset env
-            env.reset_env()
-            # check if enough data to perform learning
-        if len(agent.memory) > agent.batch_size:
-            agent.train_model()
-            loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss[0]}\n")
-            epsilon_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"epsilon = {agent.epsilon}\n")
-            accumulative_reward_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"reward = {agent.total_reward}\n")
-            reward_values_per_episode_file.write(f"episode - {episode}/{agent.no_episodes}, "f"reward = {reward}\n")
+            # get new state after action
+            new_state = env.get_states()
 
-        # save weights if the number of episodes is a multiple of 50
-        if episode % 30 == 0:
-            agent.save(f"{agent.output_dir}weights/episode_{episode}_weights.hdf5")
+            # reshape to fit TensorFlow model input
+            new_state = np.reshape(new_state, [1, agent.state_size])
+            old_state = np.reshape(old_state, [1, agent.state_size])
 
+            # remember feedback to train deep neural network
+            agent.remember(old_state, action, reward, new_state, done)
+
+            if len(agent.memory) > agent.batch_size:
+                agent.train_model()
+
+                loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss[0]}\n")
+                epsilon_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"epsilon = {agent.epsilon}\n")
+
+            # save weights if the number of episodes is a multiple of 25
+            if episode % 25 == 0:
+                agent.save(f"{agent.output_dir}weights/episode_{episode}_weights.hdf5")
+
+            if done:
+                # if true reset env
+                env.reset_env()
+                # break and take another episode
+                break
+
+    no_finished_games_file.close()
     loss_values_file.close()
     epsilon_values_file.close()
     accumulative_reward_values_file.close()
