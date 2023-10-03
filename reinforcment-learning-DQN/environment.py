@@ -3,6 +3,7 @@ import math
 import numpy as np
 import shapes
 import geometry
+from typing import Tuple
 
 
 class RobotSimulation:
@@ -81,7 +82,7 @@ class RobotSimulation:
         if self.robot.y == self.finish_y:
             self.flag_y = 2
 
-    def get_states(self):
+    def get_states(self) -> np.array:
         print(f"GET_STATES() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
         return np.array([self.robot.x, self.robot.y, self.current_distance_to_finish, self.flag_x, self.flag_y])
 
@@ -134,7 +135,7 @@ class RobotSimulation:
             pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
         pygame.display.update()
 
-    def do_step(self, action):
+    def do_step(self, action: int) -> Tuple[int, bool, bool]:
         self.frame_iteration += 1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
