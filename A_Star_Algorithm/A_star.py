@@ -31,8 +31,8 @@ class Nodes:
         self.parent_ptr = 0
         self.neighbours_lst = []
 
-    def __str__(self):
-        return f"Node at ({self.x}, {self.y}) - Row: {self.row}, Col: {self.col}"
+    # def __str__(self):
+    #     return f"Node at ({self.x}, {self.y}) - Row: {self.row}, Col: {self.col}"
 
 
 def ret_distance(p1: tuple, p2: tuple) -> int:  # http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
@@ -50,6 +50,10 @@ def create_grid() -> list:
             node = Nodes(x, y, row, col)
             grid.append(node)
 
+    print("Grid set.")
+
+    set_neighbours(grid)
+    print("Neighbours set.")
     # node_id = 0
     # for node in grid:
     #    print(f"Node {node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
@@ -77,7 +81,6 @@ def set_neighbours(grid):
 def find_nodes_by_coordinates(grid, x, y):
     for node in grid:
         if node.x == x and node.y == y:
-            print(node)
             return node
     return None
 
@@ -87,20 +90,25 @@ def a_star(start, goal):  # https://en.wikipedia.org/wiki/A*_search_algorithm
     close_set = []
 
     open_set.append(start)
-
+    # print(f"1st append : {[node.__str__() for node in open_set]}")
+    counter = 0
     while len(open_set) > 0:
-    # while any(open_set):
         current_node = open_set[0]
         for node in open_set:
             if node.F < current_node.F or node.F == current_node.F and node.H < current_node.H:
                 current_node = node
 
         if current_node == goal:
+            print("if current_node == goal:")
             path = []
-            current = current_node
-            while current is not None:
-                path.append((current.x, current.y))
-                current = current.parent_ptr
+            while current_node is not None:
+                print("while current_node is not None:")
+                if isinstance(current_node, int):
+                    print("int")
+                    break
+                print(type(current_node))
+                path.append((current_node.x, current_node.y))
+                current_node = current_node.parent_ptr
             return path[::-1]
 
         close_set.append(current_node)
@@ -112,23 +120,22 @@ def a_star(start, goal):  # https://en.wikipedia.org/wiki/A*_search_algorithm
 
             tentative_g_score = current_node.G + ret_distance((current_node.x, current_node.y),
                                                               (neighbor.x, neighbor.y))
+            neighbor.parent_ptr = current_node
+            neighbor.G = tentative_g_score
+            neighbor.H = ret_distance((neighbor.x, neighbor.y), (goal.x, goal.y))
+            neighbor.F = neighbor.G + neighbor.H
+
             if neighbor not in open_set:
                 open_set.append(neighbor)
             elif tentative_g_score >= neighbor.G:
                 continue
-
-            neighbor.parent_ptr = current_node
-            neighbor.G = tentative_g_score
-            neighbor.H = ret_distance((neighbor.x, neighbor.y), (goal_node.x, goal_node.y))
-            neighbor.F = neighbor.G + neighbor.H
+        # print(counter)
+        counter += 1
 
     return None
 
 
-def ui_runner(start_pt, goal_pt, path):
-    grid = create_grid()
-
-    set_neighbours(grid)
+def ui_runner(start_pt, goal_pt, grid, path):
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
@@ -157,18 +164,31 @@ def ui_runner(start_pt, goal_pt, path):
 
 if __name__ == "__main__":
     start_point = (100, 100)
-    goal_point = (300, 300)
+    goal_point = (300, 100)
 
-    start_node = find_nodes_by_coordinates(grid=create_grid(), x=start_point[0], y=start_point[1])
-    goal_node = find_nodes_by_coordinates(grid=create_grid(), x=goal_point[0], y=goal_point[1])
+    grid = create_grid()
 
-    path = a_star(start_node, goal_node)
+    start_node = find_nodes_by_coordinates(grid=grid, x=start_point[0], y=start_point[1])
+    goal_node = find_nodes_by_coordinates(grid=grid, x=goal_point[0], y=goal_point[1])
+    print(start_node)
+    # print(start_node.x)
+    # print(start_node.y)
+    # print(start_node.row)
+    # print(start_node.col)
+    # print(start_node.F)
+    # print(start_node.G)
+    # print(start_node.H)
+    # print(start_node.parent_ptr)
+    # print(start_node.neighbours_lst)
 
-    if path:
+    print("Starting A*")
+    ret_path = a_star(start_node, goal_node)
+
+    if ret_path:
         print("Path found.")
-        print(path)
+        print(ret_path)
     else:
         print("Path not found!")
-        print(path)
+        print(ret_path)
 
-    ui_runner(start_point, goal_point, path)
+    ui_runner(start_point, goal_point, grid, ret_path)
