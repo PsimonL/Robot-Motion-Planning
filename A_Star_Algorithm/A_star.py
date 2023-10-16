@@ -1,5 +1,4 @@
 import pygame
-import math
 
 WIDTH = 600
 HEIGHT = 600
@@ -11,15 +10,14 @@ BLACK = (0, 0, 0)
 YELLOW = (255, 255, 0)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
+BLUE = (0, 0, 255)
 
-# Node 0 at (10, 10) - Row: 0, Col: 0
-# Node 3570 at (610, 610) - Row: 30, Col: 30
-# MARGIN_X = 10
-# MARGIN_Y = 10
 MARGIN_X = 0
 MARGIN_Y = 0
 NUM_ROWS = (WIDTH - MARGIN_X) // 5
 NUM_COLS = (HEIGHT - MARGIN_Y) // 5
+
+THRASH_NODES = set()
 
 
 class Nodes:
@@ -31,8 +29,8 @@ class Nodes:
         self.parent_ptr = 0
         self.neighbours_lst = []
 
-    # def __str__(self):
-    #     return f"Node at ({self.x}, {self.y}) - Row: {self.row}, Col: {self.col}"
+    def __str__(self):
+        return f"Node at ({self.x}, {self.y}) - Row: {self.row}, Col: {self.col}"
 
 
 def ret_distance(p1: tuple, p2: tuple) -> int:  # http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
@@ -41,7 +39,29 @@ def ret_distance(p1: tuple, p2: tuple) -> int:  # http://theory.stanford.edu/~am
     return D * (dx + dy) + (D2 - 2 * D) * min(dx, dy)  # Diagonal Distance
 
 
-def create_grid() -> list:
+def get_obstacles(obstacles):
+    obstacle_rects = []
+    for obstacle in obstacles:
+        if isinstance(obstacle[0], list):
+            for sub_obstacle in obstacle:
+                obstacle_rects.append(pygame.Rect(sub_obstacle[0], sub_obstacle[1], sub_obstacle[2], sub_obstacle[3]))
+        else:
+            obstacle_rects.append(pygame.Rect(obstacle[0], obstacle[1], obstacle[2], obstacle[3]))
+    return obstacle_rects
+
+
+def check_obstacles(node, obstacles_coords):
+    node_x, node_y = node.x, node.y
+    for obstacles_coord in obstacles_coords:
+        obstacle_x, obstacle_y, width, height = obstacles_coord
+        if obstacle_x <= node_x < obstacle_x + width and obstacle_y <= node_y < obstacle_y + height:
+            THRASH_NODES.add(node)
+            # print(f"Node which are inside obstacle: ({node.x}, {node.y})")
+            return True
+    return False
+
+
+def create_grid(obstacles_coords) -> list:
     grid = []
     for row in range(NUM_ROWS):
         for col in range(NUM_COLS):
@@ -52,17 +72,17 @@ def create_grid() -> list:
 
     print("Grid set.")
 
-    set_neighbours(grid)
+    set_neighbours(grid, obstacles_coords)
     print("Neighbours set.")
-    # node_id = 0
-    # for node in grid:
-    #    print(f"Node {node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
-    #    node_id += 1
+    node_id = 0
+    for node in grid:
+        print(f"Node {node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
+        node_id += 1
 
     return grid
 
 
-def set_neighbours(grid):
+def set_neighbours(grid, obstacles_coords):
     for node in grid:
         row, col = node.row, node.col
         neighbors = []
@@ -73,7 +93,9 @@ def set_neighbours(grid):
         for dr, dc in neighbor_direction:
             r, c = row + dr, col + dc
             if 0 <= r < NUM_ROWS and 0 <= c < NUM_COLS:
-                neighbors.append(grid[r * NUM_COLS + c])
+                neighbor_node = grid[r * NUM_COLS + c]
+                if not check_obstacles(neighbor_node, obstacles_coords):
+                    neighbors.append(neighbor_node)
 
         node.neighbours_lst = neighbors
 
@@ -85,7 +107,7 @@ def find_nodes_by_coordinates(grid, x, y):
     return None
 
 
-def a_star(start, goal):  # https://en.wikipedia.org/wiki/A*_search_algorithm
+def a_star(start, goal, obstacles):  # https://en.wikipedia.org/wiki/A*_search_algorithm
     open_set = []
     close_set = []
 
@@ -135,8 +157,7 @@ def a_star(start, goal):  # https://en.wikipedia.org/wiki/A*_search_algorithm
     return None
 
 
-def ui_runner(start_pt, goal_pt, grid, path):
-
+def ui_runner(start_pt, goal_pt, grid, obstacles, path):
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
     running = True
@@ -149,6 +170,9 @@ def ui_runner(start_pt, goal_pt, grid, path):
 
         for node in grid:
             pygame.draw.circle(screen, WHITE, (node.x, node.y), NODE_SIZE)
+
+        for obstacle in obstacles:
+            pygame.draw.rect(screen, BLUE, obstacle)
 
         pygame.draw.circle(screen, YELLOW, (start_pt[0], start_pt[1]), NODE_SIZE * 8)
         pygame.draw.circle(screen, GREEN, (goal_pt[0], goal_pt[1]), NODE_SIZE * 8)
@@ -164,13 +188,20 @@ def ui_runner(start_pt, goal_pt, grid, path):
 
 if __name__ == "__main__":
     start_point = (100, 100)
-    goal_point = (300, 100)
+    goal_point = (540, 540)
 
-    grid = create_grid()
+    obstacles_coords = [[100, 140, 300, 50], [400, 400, 100, 100], [100, 320, 200, 50]]
+    obstacles = get_obstacles(obstacles_coords)
+
+    grid = create_grid(obstacles_coords)
 
     start_node = find_nodes_by_coordinates(grid=grid, x=start_point[0], y=start_point[1])
     goal_node = find_nodes_by_coordinates(grid=grid, x=goal_point[0], y=goal_point[1])
-    print(start_node)
+
+    sorted_thrash_set = sorted(THRASH_NODES, key=lambda node: (node.x, node.y))
+    for item in sorted_thrash_set:
+        print("Thrash node: {}".format(item))
+    # print(start_node)
     # print(start_node.x)
     # print(start_node.y)
     # print(start_node.row)
@@ -182,7 +213,7 @@ if __name__ == "__main__":
     # print(start_node.neighbours_lst)
 
     print("Starting A*")
-    ret_path = a_star(start_node, goal_node)
+    ret_path = a_star(start_node, goal_node, obstacles)
 
     if ret_path:
         print("Path found.")
@@ -191,4 +222,4 @@ if __name__ == "__main__":
         print("Path not found!")
         print(ret_path)
 
-    ui_runner(start_point, goal_point, grid, ret_path)
+    ui_runner(start_point, goal_point, grid, obstacles, ret_path)
