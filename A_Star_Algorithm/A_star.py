@@ -1,4 +1,7 @@
 import pygame
+from numba import jit
+import time
+import multiprocessing
 
 WIDTH = 600
 HEIGHT = 600
@@ -14,15 +17,17 @@ BLUE = (0, 0, 255)
 
 MARGIN_X = 0
 MARGIN_Y = 0
-NUM_ROWS = (WIDTH - MARGIN_X) // 5
-NUM_COLS = (HEIGHT - MARGIN_Y) // 5
+# NUM_ROWS = (WIDTH - MARGIN_X) // 5
+# NUM_COLS = (HEIGHT - MARGIN_Y) // 5
+NUM_ROWS = WIDTH
+NUM_COLS = HEIGHT
 
 THRASH_NODES = set()
 
 
 class Nodes:
     def __init__(self, x, y, row, col):
-        self.x, self.y = x, y
+        self.x, self.y = row, col
         self.row, self.col = row, col  # multiple of 5, distance on diangonals will be 7 and horizontal as well as vertical would be 5
         self.G, self.H = 0, 0  # G - distance from current node to start node , H - heuristic distance from current node to end node
         self.F = self.G + self.H  # F (node in nodes) = G (node in nodes) + H (node in nodes)
@@ -65,9 +70,11 @@ def create_grid(obstacles_coords) -> list:
     grid = []
     for row in range(NUM_ROWS):
         for col in range(NUM_COLS):
-            x = MARGIN_X + col * 20
-            y = MARGIN_Y + row * 20
-            node = Nodes(x, y, row, col)
+            # x = MARGIN_X + col * 5
+            # y = MARGIN_Y + row * 5
+            # node = Nodes(x, y, row, col)
+            # grid.append(node)
+            node = Nodes(0, 0, row, col)
             grid.append(node)
 
     print("Grid set.")
@@ -112,7 +119,6 @@ def a_star(start, goal, obstacles):  # https://en.wikipedia.org/wiki/A*_search_a
     close_set = []
 
     open_set.append(start)
-    # print(f"1st append : {[node.__str__() for node in open_set]}")
     counter = 0
     while len(open_set) > 0:
         current_node = open_set[0]
@@ -121,14 +127,12 @@ def a_star(start, goal, obstacles):  # https://en.wikipedia.org/wiki/A*_search_a
                 current_node = node
 
         if current_node == goal:
-            print("if current_node == goal:")
+            # print("if current_node == goal:")
             path = []
             while current_node is not None:
-                print("while current_node is not None:")
+                # print("while current_node is not None:")
                 if isinstance(current_node, int):
-                    print("int")
                     break
-                print(type(current_node))
                 path.append((current_node.x, current_node.y))
                 current_node = current_node.parent_ptr
             return path[::-1]
@@ -177,6 +181,8 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, path):
         pygame.draw.circle(screen, YELLOW, (start_pt[0], start_pt[1]), NODE_SIZE * 8)
         pygame.draw.circle(screen, GREEN, (goal_pt[0], goal_pt[1]), NODE_SIZE * 8)
 
+        pygame.draw.circle(screen, RED, (600, 600), NODE_SIZE*10)
+
         if path:
             for i in range(1, len(path)):
                 pygame.draw.line(screen, RED, path[i - 1], path[i], NODE_SIZE * 4)
@@ -186,6 +192,44 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, path):
     pygame.quit()
 
 
+def create_grid_helper(args):
+    obstacles_coords, start, end, NUM_COLS = args
+    grid = []
+    for row in range(start, end):
+        for col in range(NUM_COLS):
+            if row * NUM_COLS + col < len(grid):
+                # x = MARGIN_X + col * 5
+                # y = MARGIN_Y + row * 5
+                # node = Nodes(x, y, row, col)
+                # grid.append(node)
+                node = Nodes(0, 0, row, col)
+                grid.append(node)
+
+    set_neighbours(grid, obstacles_coords)
+
+    return grid
+
+def create_grid_parallel(obstacles_coords) -> list:
+    grid = []
+
+    processes = 2  # Dwa procesy
+    pool = multiprocessing.Pool(processes)
+
+    split = NUM_ROWS // processes
+    starts = [i * split for i in range(processes)]
+    ends = [(i + 1) * split if i < processes - 1 else NUM_ROWS for i in range(processes)]
+
+    args = [(obstacles_coords, starts[i], ends[i], NUM_COLS) for i in range(processes)]
+    results = pool.map(create_grid_helper, args)
+
+    for result in results:
+        grid.extend(result)
+
+    pool.close()
+    pool.join()
+
+    return grid
+
 if __name__ == "__main__":
     start_point = (100, 100)
     goal_point = (540, 540)
@@ -193,33 +237,31 @@ if __name__ == "__main__":
     obstacles_coords = [[100, 140, 300, 50], [400, 400, 100, 100], [100, 320, 200, 50]]
     obstacles = get_obstacles(obstacles_coords)
 
+    start_time = time.time()
     grid = create_grid(obstacles_coords)
+    end_time = time.time()
+    print("Single process ", end_time - start_time)
 
-    start_node = find_nodes_by_coordinates(grid=grid, x=start_point[0], y=start_point[1])
-    goal_node = find_nodes_by_coordinates(grid=grid, x=goal_point[0], y=goal_point[1])
+    start_time_m = time.time()
+    grid_m = create_grid_parallel(obstacles_coords)
+    end_time_m = time.time()
+    print("Double processes ", end_time_m - start_time_m)
 
-    sorted_thrash_set = sorted(THRASH_NODES, key=lambda node: (node.x, node.y))
-    for item in sorted_thrash_set:
-        print("Thrash node: {}".format(item))
-    # print(start_node)
-    # print(start_node.x)
-    # print(start_node.y)
-    # print(start_node.row)
-    # print(start_node.col)
-    # print(start_node.F)
-    # print(start_node.G)
-    # print(start_node.H)
-    # print(start_node.parent_ptr)
-    # print(start_node.neighbours_lst)
-
-    print("Starting A*")
-    ret_path = a_star(start_node, goal_node, obstacles)
-
-    if ret_path:
-        print("Path found.")
-        print(ret_path)
-    else:
-        print("Path not found!")
-        print(ret_path)
-
-    ui_runner(start_point, goal_point, grid, obstacles, ret_path)
+    # start_node = find_nodes_by_coordinates(grid=grid, x=start_point[0], y=start_point[1])
+    # goal_node = find_nodes_by_coordinates(grid=grid, x=goal_point[0], y=goal_point[1])
+    #
+    # sorted_thrash_set = sorted(THRASH_NODES, key=lambda node: (node.x, node.y))
+    # for item in sorted_thrash_set:
+    #     print("Thrash node: {}".format(item))
+    #
+    # print("Starting A*")
+    # ret_path = a_star(start_node, goal_node, obstacles)
+    #
+    # if ret_path:
+    #     print("Path found.")
+    #     print(ret_path)
+    # else:
+    #     print("Path not found!")
+    #     print(ret_path)
+    #
+    # ui_runner(start_point, goal_point, grid, obstacles, ret_path)
