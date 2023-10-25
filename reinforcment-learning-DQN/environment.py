@@ -12,7 +12,7 @@ class RobotSimulation:
 
         self.SCREEN_WIDTH = 700
         self.SCREEN_HEIGHT = 700
-        self.FPS = 600
+        self.FPS = 60
 
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
@@ -41,13 +41,13 @@ class RobotSimulation:
         print("RESET ENV CALL")
         self.frame_iteration = 0
 
-        self.start_x = 150
-        self.start_y = 350
-        self.finish_x = 600
-        self.finish_y = 350
+        self.start_x = 200
+        self.start_y = 200
+        self.finish_x = 400
+        self.finish_y = 200
 
         self.reward = 0
-        self.time_penalty_margin = 100
+        self.time_penalty_margin = 30
         self.correction_xy_start = 20
         self.robot = shapes.FloatRect(self.start_x, self.start_y, self.correction_xy_start, self.correction_xy_start)
 

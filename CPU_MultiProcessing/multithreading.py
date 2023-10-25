@@ -1,7 +1,7 @@
 import multiprocessing
 import time
 
-N = 100000000
+N = 1_500_000
 
 
 def count_numbers(start, end):

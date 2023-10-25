@@ -42,8 +42,9 @@ class DQNagent:
         #     keras.layers.Dense(self.action_size, activation='linear')
         # ])
         model = keras.models.Sequential()
-        model.add(keras.layers.Dense(24, input_dim=self.state_size, activation='relu'))
-        model.add(keras.layers.Dense(24, activation='relu'))
+        model.add(keras.layers.Dense(64, input_dim=self.state_size, activation='relu'))
+        model.add(keras.layers.Dense(64, activation='relu'))
+        model.add(keras.layers.Dense(64, activation='relu'))
         model.add(keras.layers.Dense(self.action_size, activation='linear'))
 
         model.compile(
