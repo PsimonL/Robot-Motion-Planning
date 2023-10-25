@@ -17,18 +17,18 @@ BLUE = (0, 0, 255)
 
 MARGIN_X = 0
 MARGIN_Y = 0
-# NUM_ROWS = (WIDTH - MARGIN_X) // 5
-# NUM_COLS = (HEIGHT - MARGIN_Y) // 5
+NUM_ROWS = (WIDTH - MARGIN_X) // 5
+NUM_COLS = (HEIGHT - MARGIN_Y) // 5
 
-NUM_ROWS = WIDTH
-NUM_COLS = HEIGHT
+# NUM_ROWS = WIDTH
+# NUM_COLS = HEIGHT
 
 THRASH_NODES = set()
 
 
 class Nodes:
     def __init__(self, x, y, row, col):
-        self.x, self.y = row, col
+        self.x, self.y = x, y  # row, col
         self.row, self.col = row, col  # multiple of 5, distance on diangonals will be 7 and horizontal as well as vertical would be 5
         self.G, self.H = 0, 0  # G - distance from current node to start node , H - heuristic distance from current node to end node
         self.F = self.G + self.H  # F (node in nodes) = G (node in nodes) + H (node in nodes)
@@ -70,10 +70,10 @@ def create_grid(obstacles_coords) -> list:
     grid = []
     for row in range(NUM_ROWS):
         for col in range(NUM_COLS):
-            x = MARGIN_X + col * 5
-            y = MARGIN_Y + row * 5
-            # x = MARGIN_X + col * 20
-            # y = MARGIN_Y + row * 20
+            # x = MARGIN_X + col * 5
+            # y = MARGIN_Y + row * 5
+            x = MARGIN_X + col * 20
+            y = MARGIN_Y + row * 20
             node = Nodes(x, y, row, col)
             grid.append(node)
             # node = Nodes(0, 0, row, col)
@@ -241,9 +241,8 @@ if __name__ == "__main__":
         print(f"Node {node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
         node_id += 1
 
-    end_time = time.time()
-    print("Single process ", end_time - start_time)
-
+    # end_time = time.time()
+    # print("Single process ", end_time - start_time)
     # start_time_m = time.time()
     # grid_m = create_grid_parallel(obstacles_coords)
     # end_time_m = time.time()
@@ -256,8 +255,11 @@ if __name__ == "__main__":
     for item in sorted_thrash_set:
         print("Thrash node: {}".format(item))
 
-    print("Starting A*")
-    ret_path = a_star(start_node, goal_node)
+    if start_node and goal_node:
+        print("Starting A*")
+        ret_path = a_star(start_node, goal_node)
+    else:
+        raise Exception("Nodes don't found!")
 
     if ret_path:
         print("Path found.")
