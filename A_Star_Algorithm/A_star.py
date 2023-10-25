@@ -19,6 +19,7 @@ MARGIN_X = 0
 MARGIN_Y = 0
 # NUM_ROWS = (WIDTH - MARGIN_X) // 5
 # NUM_COLS = (HEIGHT - MARGIN_Y) // 5
+
 NUM_ROWS = WIDTH
 NUM_COLS = HEIGHT
 
@@ -61,7 +62,6 @@ def check_obstacles(node, obstacles_coords):
         obstacle_x, obstacle_y, width, height = obstacles_coord
         if obstacle_x <= node_x < obstacle_x + width and obstacle_y <= node_y < obstacle_y + height:
             THRASH_NODES.add(node)
-            # print(f"Node which are inside obstacle: ({node.x}, {node.y})")
             return True
     return False
 
@@ -70,21 +70,23 @@ def create_grid(obstacles_coords) -> list:
     grid = []
     for row in range(NUM_ROWS):
         for col in range(NUM_COLS):
-            # x = MARGIN_X + col * 5
-            # y = MARGIN_Y + row * 5
-            # node = Nodes(x, y, row, col)
-            # grid.append(node)
-            node = Nodes(0, 0, row, col)
+            x = MARGIN_X + col * 5
+            y = MARGIN_Y + row * 5
+            # x = MARGIN_X + col * 20
+            # y = MARGIN_Y + row * 20
+            node = Nodes(x, y, row, col)
             grid.append(node)
+            # node = Nodes(0, 0, row, col)
+            # grid.append(node)
 
     print("Grid set.")
 
     set_neighbours(grid, obstacles_coords)
     print("Neighbours set.")
-    node_id = 0
-    for node in grid:
-        print(f"Node {node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
-        node_id += 1
+    # node_id = 0
+    # for node in grid:
+    #     print(f"Node {node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
+    #     node_id += 1
 
     return grid
 
@@ -114,12 +116,11 @@ def find_nodes_by_coordinates(grid, x, y):
     return None
 
 
-def a_star(start, goal, obstacles):  # https://en.wikipedia.org/wiki/A*_search_algorithm
+def a_star(start, goal):  # https://en.wikipedia.org/wiki/A*_search_algorithm
     open_set = []
     close_set = []
 
     open_set.append(start)
-    counter = 0
     while len(open_set) > 0:
         current_node = open_set[0]
         for node in open_set:
@@ -127,10 +128,8 @@ def a_star(start, goal, obstacles):  # https://en.wikipedia.org/wiki/A*_search_a
                 current_node = node
 
         if current_node == goal:
-            # print("if current_node == goal:")
             path = []
             while current_node is not None:
-                # print("while current_node is not None:")
                 if isinstance(current_node, int):
                     break
                 path.append((current_node.x, current_node.y))
@@ -155,9 +154,6 @@ def a_star(start, goal, obstacles):  # https://en.wikipedia.org/wiki/A*_search_a
                 open_set.append(neighbor)
             elif tentative_g_score >= neighbor.G:
                 continue
-        # print(counter)
-        counter += 1
-
     return None
 
 
@@ -192,43 +188,43 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, path):
     pygame.quit()
 
 
-def create_grid_helper(args):
-    obstacles_coords, start, end, NUM_COLS = args
-    grid = []
-    for row in range(start, end):
-        for col in range(NUM_COLS):
-            if row * NUM_COLS + col < len(grid):
-                # x = MARGIN_X + col * 5
-                # y = MARGIN_Y + row * 5
-                # node = Nodes(x, y, row, col)
-                # grid.append(node)
-                node = Nodes(0, 0, row, col)
-                grid.append(node)
-
-    set_neighbours(grid, obstacles_coords)
-
-    return grid
-
-def create_grid_parallel(obstacles_coords) -> list:
-    grid = []
-
-    processes = 2  # Dwa procesy
-    pool = multiprocessing.Pool(processes)
-
-    split = NUM_ROWS // processes
-    starts = [i * split for i in range(processes)]
-    ends = [(i + 1) * split if i < processes - 1 else NUM_ROWS for i in range(processes)]
-
-    args = [(obstacles_coords, starts[i], ends[i], NUM_COLS) for i in range(processes)]
-    results = pool.map(create_grid_helper, args)
-
-    for result in results:
-        grid.extend(result)
-
-    pool.close()
-    pool.join()
-
-    return grid
+# def create_grid_helper(args):
+#     obstacles_coords, start, end, NUM_COLS = args
+#     grid = []
+#     for row in range(start, end):
+#         for col in range(NUM_COLS):
+#             if row * NUM_COLS + col < len(grid):
+#                 # x = MARGIN_X + col * 5
+#                 # y = MARGIN_Y + row * 5
+#                 # node = Nodes(x, y, row, col)
+#                 # grid.append(node)
+#                 node = Nodes(0, 0, row, col)
+#                 grid.append(node)
+#
+#     set_neighbours(grid, obstacles_coords)
+#
+#     return grid
+#
+# def create_grid_parallel(obstacles_coords) -> list:
+#     grid = []
+#
+#     processes = 2  # Dwa procesy
+#     pool = multiprocessing.Pool(processes)
+#
+#     split = NUM_ROWS // processes
+#     starts = [i * split for i in range(processes)]
+#     ends = [(i + 1) * split if i < processes - 1 else NUM_ROWS for i in range(processes)]
+#
+#     args = [(obstacles_coords, starts[i], ends[i], NUM_COLS) for i in range(processes)]
+#     results = pool.map(create_grid_helper, args)
+#
+#     for result in results:
+#         grid.extend(result)
+#
+#     pool.close()
+#     pool.join()
+#
+#     return grid
 
 if __name__ == "__main__":
     start_point = (100, 100)
@@ -239,29 +235,35 @@ if __name__ == "__main__":
 
     start_time = time.time()
     grid = create_grid(obstacles_coords)
+
+    node_id = 0
+    for node in grid:
+        print(f"Node {node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
+        node_id += 1
+
     end_time = time.time()
     print("Single process ", end_time - start_time)
 
-    start_time_m = time.time()
-    grid_m = create_grid_parallel(obstacles_coords)
-    end_time_m = time.time()
-    print("Double processes ", end_time_m - start_time_m)
+    # start_time_m = time.time()
+    # grid_m = create_grid_parallel(obstacles_coords)
+    # end_time_m = time.time()
+    # print("Double processes ", end_time_m - start_time_m)
 
-    # start_node = find_nodes_by_coordinates(grid=grid, x=start_point[0], y=start_point[1])
-    # goal_node = find_nodes_by_coordinates(grid=grid, x=goal_point[0], y=goal_point[1])
-    #
-    # sorted_thrash_set = sorted(THRASH_NODES, key=lambda node: (node.x, node.y))
-    # for item in sorted_thrash_set:
-    #     print("Thrash node: {}".format(item))
-    #
-    # print("Starting A*")
-    # ret_path = a_star(start_node, goal_node, obstacles)
-    #
-    # if ret_path:
-    #     print("Path found.")
-    #     print(ret_path)
-    # else:
-    #     print("Path not found!")
-    #     print(ret_path)
-    #
-    # ui_runner(start_point, goal_point, grid, obstacles, ret_path)
+    start_node = find_nodes_by_coordinates(grid=grid, x=start_point[0], y=start_point[1])
+    goal_node = find_nodes_by_coordinates(grid=grid, x=goal_point[0], y=goal_point[1])
+
+    sorted_thrash_set = sorted(THRASH_NODES, key=lambda node: (node.x, node.y))
+    for item in sorted_thrash_set:
+        print("Thrash node: {}".format(item))
+
+    print("Starting A*")
+    ret_path = a_star(start_node, goal_node)
+
+    if ret_path:
+        print("Path found.")
+        print(ret_path)
+    else:
+        print("Path not found!")
+        print(ret_path)
+
+    ui_runner(start_point, goal_point, grid, obstacles, ret_path)
