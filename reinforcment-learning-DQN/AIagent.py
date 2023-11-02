@@ -9,6 +9,7 @@ import keras.models
 import keras.layers
 import keras.optimizers
 from collections import deque
+from numba import cuda, jit
 
 from environment import RobotSimulation
 
@@ -35,17 +36,17 @@ class DQNagent:
         self.model = self._build_model()
 
     def _build_model(self):  # Predict future reward using regression for DQN agent.
-        # model = keras.models.Sequential([
-        #     keras.layers.Input(shape=(self.state_size,)),
-        #     keras.layers.Dense(64, activation='relu'),
-        #     keras.layers.Dense(64, activation='relu'),
-        #     keras.layers.Dense(self.action_size, activation='linear')
-        # ])
-        model = keras.models.Sequential()
-        model.add(keras.layers.Dense(64, input_dim=self.state_size, activation='relu'))
-        model.add(keras.layers.Dense(64, activation='relu'))
-        model.add(keras.layers.Dense(64, activation='relu'))
-        model.add(keras.layers.Dense(self.action_size, activation='linear'))
+        model = keras.models.Sequential([
+            keras.layers.Input(shape=(self.state_size,)),
+            keras.layers.Dense(64, activation='relu'),
+            keras.layers.Dense(64, activation='relu'),
+            keras.layers.Dense(self.action_size, activation='linear')
+        ])
+        # model = keras.models.Sequential()
+        # model.add(keras.layers.Dense(64, input_dim=self.state_size, activation='relu'))
+        # model.add(keras.layers.Dense(64, activation='relu'))
+        # model.add(keras.layers.Dense(64, activation='relu'))
+        # model.add(keras.layers.Dense(self.action_size, activation='linear'))
 
         model.compile(
             optimizer=keras.optimizers.Adam(

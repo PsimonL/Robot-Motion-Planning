@@ -1,7 +1,7 @@
 import pygame
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
-from numba import jit
+from numba import cuda, jit
 import time
 import multiprocessing
 
@@ -62,12 +62,27 @@ def get_obstacles(obstacles):
             obstacle_rects.append(pygame.Rect(obstacle[0], obstacle[1], obstacle[2], obstacle[3]))
     return obstacle_rects
 
-def is_inside_room(point, room_coords):
+
+def is_obstacle_inside_room(room_coords, obstacles_coords):
+    polygon = Polygon(room_coords)
+    for obstacle_coords in obstacles_coords:
+        obstacle_x, obstacle_y, width, height = obstacle_coords
+        obstacle_points = [(obstacle_x, obstacle_y), (obstacle_x + width, obstacle_y),
+                           (obstacle_x + width, obstacle_y + height), (obstacle_x, obstacle_y + height)]
+        for point in obstacle_points:
+            point_shapely = Point(point[0], point[1])
+            if not polygon.contains(point_shapely):
+                return False
+    return True
+
+
+def is_node_inside_room(point, room_coords):  # https://en.wikipedia.org/wiki/Point_in_polygon
     polygon = Polygon(room_coords)
     point = Point(point[0], point[1])
     return polygon.contains(point)
 
-def check_obstacles(node, obstacles_coords):
+
+def is_node_inside_obstacle(node, obstacles_coords):
     node_x, node_y = node.x, node.y
     for obstacles_coord in obstacles_coords:
         obstacle_x, obstacle_y, width, height = obstacles_coord
@@ -77,24 +92,26 @@ def check_obstacles(node, obstacles_coords):
     return False
 
 
-def create_grid(obstacles_coords) -> list:
+def create_grid(obstacles_coords, room_coords) -> list:
     grid = []
     for row in range(NUM_ROWS):
         for col in range(NUM_COLS):
             x = col * 5
             y = row * 5
+            # if is_inside_room((x, y), room_coords):
             node = Nodes(x, y, row, col)
             grid.append(node)
 
     print("Grid set.")
 
-    set_neighbours(grid, obstacles_coords)
+    set_neighbours(grid, obstacles_coords,
+                   room_coords)  # TODO: jak narazie dziala tylko dla prostokatnego pokoju, liczba nodow sie rozjezdza z liczba kolumn etc
     print("Neighbours set.")
 
     return grid
 
 
-def set_neighbours(grid, obstacles_coords):
+def set_neighbours(grid, obstacles_coords, room_coords):
     for node in grid:
         row, col = node.row, node.col
         neighbors = []
@@ -104,9 +121,11 @@ def set_neighbours(grid, obstacles_coords):
 
         for dr, dc in neighbor_direction:
             r, c = row + dr, col + dc
+            # point = (c * 5, r * 5)
             if 0 <= r < NUM_ROWS and 0 <= c < NUM_COLS:
+                # if is_inside_room(point, room_coords):
                 neighbor_node = grid[r * NUM_COLS + c]
-                if not check_obstacles(neighbor_node, obstacles_coords):
+                if not is_node_inside_obstacle(neighbor_node, obstacles_coords):
                     neighbors.append(neighbor_node)
 
         node.neighbours_lst = neighbors
@@ -236,19 +255,27 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, path):
 #     return grid
 
 
-
 if __name__ == "__main__":
-    start_point = (200, 200)
-    goal_point = (400, 400)
+    # start_point = (300, 100)
+    # goal_point = (300, 500)
 
-    room_coords = [(0, 0), (300, 0), (300, 50), (600, 50), (600, 600), (0, 600)]
+    start_point = (100, 10)
+    goal_point = (500, 10)
+
+    room_coords = [(0, 0), (600, 0), (600, 600), (0, 600)]
 
     # obstacles_coords = [[0, 100, 400, 50], [0, 400, 200, 100], [50, 220, 600, 50]]
-    obstacles_coords = []
+    # obstacles_coords = [[250, 300, 340, 50]]
+    obstacles_coords = [[1, 30, 550, 50], [50, 120, 549, 50], [1, 200, 100, 50]]
+    # obstacles_coords = []
     obstacles = get_obstacles(obstacles_coords)
 
+    if not is_obstacle_inside_room(room_coords, obstacles_coords):
+        # raise RuntimeError("")
+        raise Exception("Obstacles outside of room!")
+
     # start_time = time.time()
-    grid = create_grid(obstacles_coords)
+    grid = create_grid(obstacles_coords, room_coords)
 
     node_id = 0
     for node in grid:

@@ -4,7 +4,7 @@ import numpy as np
 import shapes
 import geometry
 from typing import Tuple
-
+from numba import cuda, jit
 
 class RobotSimulation:
     def __init__(self):
