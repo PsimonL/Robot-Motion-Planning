@@ -1,10 +1,15 @@
 import pygame
-from numba import jit
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+from numba import cuda, jit
 import time
 import multiprocessing
 
-WIDTH = 600
-HEIGHT = 600
+size = 650
+inner_size = 600
+WIDTH, HEIGHT = size, size
+INNER_WIDTH, INNER_HEIGHT = inner_size, inner_size
+ADJUST_VECTOR = (size - inner_size) // 2
 
 NODE_SIZE = 1
 
@@ -14,16 +19,18 @@ YELLOW = (255, 255, 0)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
+ORANGE = (255, 165, 0)
 
-MARGIN_X = 0
-MARGIN_Y = 0
-NUM_ROWS = (WIDTH - MARGIN_X) // 5
-NUM_COLS = (HEIGHT - MARGIN_Y) // 5
-
-# NUM_ROWS = WIDTH
-# NUM_COLS = HEIGHT
+NUM_ROWS = ((INNER_WIDTH) // 5) + 1
+NUM_COLS = ((INNER_HEIGHT) // 5) + 1
+# NUM_ROWS = INNER_WIDTH
+# NUM_COLS = INNER_HEIGHT
 
 THRASH_NODES = set()
+
+
+# class Environment:
+#     def __init__(self):
 
 
 class Nodes:
@@ -56,7 +63,26 @@ def get_obstacles(obstacles):
     return obstacle_rects
 
 
-def check_obstacles(node, obstacles_coords):
+def is_obstacle_inside_room(room_coords, obstacles_coords):
+    polygon = Polygon(room_coords)
+    for obstacle_coords in obstacles_coords:
+        obstacle_x, obstacle_y, width, height = obstacle_coords
+        obstacle_points = [(obstacle_x, obstacle_y), (obstacle_x + width, obstacle_y),
+                           (obstacle_x + width, obstacle_y + height), (obstacle_x, obstacle_y + height)]
+        for point in obstacle_points:
+            point_shapely = Point(point[0], point[1])
+            if not polygon.contains(point_shapely):
+                return False
+    return True
+
+
+def is_node_inside_room(point, room_coords):  # https://en.wikipedia.org/wiki/Point_in_polygon
+    polygon = Polygon(room_coords)
+    point = Point(point[0], point[1])
+    return polygon.contains(point)
+
+
+def is_node_inside_obstacle(node, obstacles_coords):
     node_x, node_y = node.x, node.y
     for obstacles_coord in obstacles_coords:
         obstacle_x, obstacle_y, width, height = obstacles_coord
@@ -65,33 +91,65 @@ def check_obstacles(node, obstacles_coords):
             return True
     return False
 
+# def create_grid(obstacles_coords, room_coords) -> list:
+#     grid = []
+#     row_counter = 0
+#     col_counter = 0
+#     for row in range(NUM_ROWS):
+#         for col in range(NUM_COLS):
+#             x = col * 5
+#             y = row * 5
+#             if is_node_inside_room((x, y), room_coords):
+#                 node = Nodes(x, y, row_counter, col_counter)
+#                 grid.append(node)
+#             col_counter += 1
+#         row_counter += 1
+#
+#     print("Grid set.")
+#
+#     set_neighbours(grid, obstacles_coords, room_coords, row_counter, col_counter)
+#     print("Neighbours set.")
+#
+#     return grid
+#
+# def set_neighbours(grid, obstacles_coords, room_coords, num_rows, num_cols):
+#     for node in grid:
+#         row, col = node.row, node.col
+#         neighbors = []
+#
+#         # Directions: [D, U, R, L, DR, UL, UR, DL]
+#         neighbor_direction = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (-1, 1), (1, -1)]
+#
+#         for dr, dc in neighbor_direction:
+#             r, c = row + dr, col + dc
+#             if 0 <= r < num_rows and 0 <= c < num_cols and is_node_inside_room((c * 5, r * 5), room_coords):
+#                 neighbor_node = grid[r * num_cols + c]
+#                 if not is_node_inside_obstacle(neighbor_node, obstacles_coords):
+#                     neighbors.append(neighbor_node)
+#
+#         node.neighbours_lst = neighbors
 
-def create_grid(obstacles_coords) -> list:
+
+def create_grid(obstacles_coords, room_coords) -> list:
     grid = []
     for row in range(NUM_ROWS):
         for col in range(NUM_COLS):
-            # x = MARGIN_X + col * 5
-            # y = MARGIN_Y + row * 5
-            x = MARGIN_X + col * 20
-            y = MARGIN_Y + row * 20
+            x = col * 5
+            y = row * 5
+            # if is_node_inside_room((x, y), room_coords):
             node = Nodes(x, y, row, col)
             grid.append(node)
-            # node = Nodes(0, 0, row, col)
-            # grid.append(node)
 
     print("Grid set.")
 
-    set_neighbours(grid, obstacles_coords)
+    set_neighbours(grid, obstacles_coords,
+                   room_coords)  # TODO: jak narazie dziala tylko dla prostokatnego pokoju, liczba nodow sie rozjezdza z liczba kolumn etc
     print("Neighbours set.")
-    # node_id = 0
-    # for node in grid:
-    #     print(f"Node {node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
-    #     node_id += 1
 
     return grid
 
 
-def set_neighbours(grid, obstacles_coords):
+def set_neighbours(grid, obstacles_coords, room_coords):
     for node in grid:
         row, col = node.row, node.col
         neighbors = []
@@ -101,12 +159,15 @@ def set_neighbours(grid, obstacles_coords):
 
         for dr, dc in neighbor_direction:
             r, c = row + dr, col + dc
+            # point = (c * 5, r * 5)
             if 0 <= r < NUM_ROWS and 0 <= c < NUM_COLS:
+                # if is_node_inside_room(point, room_coords):
                 neighbor_node = grid[r * NUM_COLS + c]
-                if not check_obstacles(neighbor_node, obstacles_coords):
+                if not is_node_inside_obstacle(neighbor_node, obstacles_coords):
                     neighbors.append(neighbor_node)
 
         node.neighbours_lst = neighbors
+
 
 
 def find_nodes_by_coordinates(grid, x, y):
@@ -169,19 +230,25 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, path):
         screen.fill(BLACK)
 
         for node in grid:
-            pygame.draw.circle(screen, WHITE, (node.x, node.y), NODE_SIZE)
+            pygame.draw.circle(screen, WHITE, (node.x + ADJUST_VECTOR, node.y + ADJUST_VECTOR), NODE_SIZE)
 
         for obstacle in obstacles:
-            pygame.draw.rect(screen, BLUE, obstacle)
+            pygame.draw.rect(screen, BLUE,
+                             (obstacle[0] + ADJUST_VECTOR, obstacle[1] + ADJUST_VECTOR, obstacle[2], obstacle[3]))
 
-        pygame.draw.circle(screen, YELLOW, (start_pt[0], start_pt[1]), NODE_SIZE * 8)
-        pygame.draw.circle(screen, GREEN, (goal_pt[0], goal_pt[1]), NODE_SIZE * 8)
+        pygame.draw.circle(screen, YELLOW, (start_pt[0] + ADJUST_VECTOR, start_pt[1] + ADJUST_VECTOR), NODE_SIZE * 8)
+        pygame.draw.circle(screen, GREEN, (goal_pt[0] + ADJUST_VECTOR, goal_pt[1] + ADJUST_VECTOR), NODE_SIZE * 8)
 
-        pygame.draw.circle(screen, RED, (600, 600), NODE_SIZE*10)
+        pygame.draw.circle(screen, RED, (INNER_WIDTH + ADJUST_VECTOR, INNER_HEIGHT + ADJUST_VECTOR), NODE_SIZE * 10)
 
         if path:
-            for i in range(1, len(path)):
-                pygame.draw.line(screen, RED, path[i - 1], path[i], NODE_SIZE * 4)
+            adjusted_path = [(x + ADJUST_VECTOR, y + ADJUST_VECTOR) for x, y in path]
+            for i in range(1, len(adjusted_path)):
+                pygame.draw.line(screen, RED, adjusted_path[i - 1], adjusted_path[i], NODE_SIZE * 4)
+
+        if len(room_coords) > 1:
+            pygame.draw.lines(screen, ORANGE, True,
+                              [(x + ADJUST_VECTOR, y + ADJUST_VECTOR) for x, y in room_coords], NODE_SIZE * 4)
 
         pygame.display.update()
 
@@ -226,15 +293,29 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, path):
 #
 #     return grid
 
-if __name__ == "__main__":
-    start_point = (100, 100)
-    goal_point = (540, 540)
 
-    obstacles_coords = [[100, 140, 300, 50], [400, 400, 100, 100], [100, 320, 200, 50]]
+if __name__ == "__main__":
+    start_point = (300, 200)
+    goal_point = (300, 500)
+
+    # start_point = (100, 10)
+    # goal_point = (500, 10)
+
+    room_coords = [(0, 0), (600, 0), (600, 600), (0, 600)]
+    # room_coords = [(0, 0), (300, 0), (300, 100), (600, 100), (600, 600), (0, 600)]
+
+    # obstacles_coords = [[0, 100, 400, 50], [0, 400, 200, 100], [50, 220, 600, 50]]
+    # obstacles_coords = [[250, 300, 340, 50]]
+    # obstacles_coords = [[1, 30, 550, 50], [50, 120, 549, 50], [1, 200, 100, 50]]
+    obstacles_coords = []
     obstacles = get_obstacles(obstacles_coords)
 
-    start_time = time.time()
-    grid = create_grid(obstacles_coords)
+    if not is_obstacle_inside_room(room_coords, obstacles_coords):
+        # raise RuntimeError("")
+        raise Exception("Obstacles outside of room!")
+
+    # start_time = time.time()
+    grid = create_grid(obstacles_coords, room_coords)
 
     node_id = 0
     for node in grid:

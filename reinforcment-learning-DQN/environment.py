@@ -4,7 +4,7 @@ import numpy as np
 import shapes
 import geometry
 from typing import Tuple
-
+from numba import cuda, jit
 
 class RobotSimulation:
     def __init__(self):
@@ -47,7 +47,7 @@ class RobotSimulation:
         self.finish_y = 200
 
         self.reward = 0
-        self.time_penalty_margin = 30
+        self.time_penalty_margin = 15
         self.correction_xy_start = 20
         self.robot = shapes.FloatRect(self.start_x, self.start_y, self.correction_xy_start, self.correction_xy_start)
 
