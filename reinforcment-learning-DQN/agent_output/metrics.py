@@ -87,6 +87,14 @@ if __name__ == "__main__":
         oy_value="epsilon"
     )
 
+    episode_plots_for_various_metrics(
+        file_name="steps_per_episode_file.txt",
+        plot_title="Steps/time per episode",
+        ox_name="Episode",
+        oy_name="Steps/time",
+        oy_value="steps_per_episode"
+    )
+
     number_of_completed_tasks(
         file_name="no_finished_games_file.txt",
         plot_title="Completed vs uncompleted episodes",

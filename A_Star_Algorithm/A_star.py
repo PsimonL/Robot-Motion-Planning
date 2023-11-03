@@ -91,6 +91,44 @@ def is_node_inside_obstacle(node, obstacles_coords):
             return True
     return False
 
+# def create_grid(obstacles_coords, room_coords) -> list:
+#     grid = []
+#     row_counter = 0
+#     col_counter = 0
+#     for row in range(NUM_ROWS):
+#         for col in range(NUM_COLS):
+#             x = col * 5
+#             y = row * 5
+#             if is_node_inside_room((x, y), room_coords):
+#                 node = Nodes(x, y, row_counter, col_counter)
+#                 grid.append(node)
+#             col_counter += 1
+#         row_counter += 1
+#
+#     print("Grid set.")
+#
+#     set_neighbours(grid, obstacles_coords, room_coords, row_counter, col_counter)
+#     print("Neighbours set.")
+#
+#     return grid
+#
+# def set_neighbours(grid, obstacles_coords, room_coords, num_rows, num_cols):
+#     for node in grid:
+#         row, col = node.row, node.col
+#         neighbors = []
+#
+#         # Directions: [D, U, R, L, DR, UL, UR, DL]
+#         neighbor_direction = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (-1, 1), (1, -1)]
+#
+#         for dr, dc in neighbor_direction:
+#             r, c = row + dr, col + dc
+#             if 0 <= r < num_rows and 0 <= c < num_cols and is_node_inside_room((c * 5, r * 5), room_coords):
+#                 neighbor_node = grid[r * num_cols + c]
+#                 if not is_node_inside_obstacle(neighbor_node, obstacles_coords):
+#                     neighbors.append(neighbor_node)
+#
+#         node.neighbours_lst = neighbors
+
 
 def create_grid(obstacles_coords, room_coords) -> list:
     grid = []
@@ -98,7 +136,7 @@ def create_grid(obstacles_coords, room_coords) -> list:
         for col in range(NUM_COLS):
             x = col * 5
             y = row * 5
-            # if is_inside_room((x, y), room_coords):
+            # if is_node_inside_room((x, y), room_coords):
             node = Nodes(x, y, row, col)
             grid.append(node)
 
@@ -123,12 +161,13 @@ def set_neighbours(grid, obstacles_coords, room_coords):
             r, c = row + dr, col + dc
             # point = (c * 5, r * 5)
             if 0 <= r < NUM_ROWS and 0 <= c < NUM_COLS:
-                # if is_inside_room(point, room_coords):
+                # if is_node_inside_room(point, room_coords):
                 neighbor_node = grid[r * NUM_COLS + c]
                 if not is_node_inside_obstacle(neighbor_node, obstacles_coords):
                     neighbors.append(neighbor_node)
 
         node.neighbours_lst = neighbors
+
 
 
 def find_nodes_by_coordinates(grid, x, y):
@@ -256,18 +295,19 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, path):
 
 
 if __name__ == "__main__":
-    # start_point = (300, 100)
-    # goal_point = (300, 500)
+    start_point = (300, 200)
+    goal_point = (300, 500)
 
-    start_point = (100, 10)
-    goal_point = (500, 10)
+    # start_point = (100, 10)
+    # goal_point = (500, 10)
 
     room_coords = [(0, 0), (600, 0), (600, 600), (0, 600)]
+    # room_coords = [(0, 0), (300, 0), (300, 100), (600, 100), (600, 600), (0, 600)]
 
     # obstacles_coords = [[0, 100, 400, 50], [0, 400, 200, 100], [50, 220, 600, 50]]
     # obstacles_coords = [[250, 300, 340, 50]]
-    obstacles_coords = [[1, 30, 550, 50], [50, 120, 549, 50], [1, 200, 100, 50]]
-    # obstacles_coords = []
+    # obstacles_coords = [[1, 30, 550, 50], [50, 120, 549, 50], [1, 200, 100, 50]]
+    obstacles_coords = []
     obstacles = get_obstacles(obstacles_coords)
 
     if not is_obstacle_inside_room(room_coords, obstacles_coords):

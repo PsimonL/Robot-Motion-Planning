@@ -33,6 +33,7 @@ class DQNagent:
         self.loss = []
         self.reward_per_episode = 0
         self.accumulative_reward = 0
+        self.steps_per_episode = 0
         self.model = self._build_model()
 
     def _build_model(self):  # Predict future reward using regression for DQN agent.
@@ -88,8 +89,21 @@ class DQNagent:
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    def load(self, name):
-        self.model.load_weights(name)
+    def load(self, name, should_load):
+        if should_load:
+            if name is not None:
+                self.model.load_weights(name)
+            else:
+                files = os.listdir(f"{self.output_dir}weights/")
+                files = [file for file in files if file.startswith("episode_") and file.endswith("weights.hdf5")]
+                if files:
+                    # latest_file = max(files, key=lambda x: int(x.split("_")[1]))
+                    latest_file = files[-1]
+                    self.model.load_weights(f"{self.output_dir}weights/{latest_file}")
+                else:
+                    print("No weight files found.")
+        else:
+            pass
 
     def save(self, name):
         self.model.save_weights(name)
@@ -98,6 +112,7 @@ class DQNagent:
 def driver():
     # initialize agent and env
     agent = DQNagent()
+    agent.load(name=None, should_load=False)
     env = RobotSimulation()
 
     if not os.path.exists(agent.output_dir):
@@ -108,16 +123,18 @@ def driver():
     accumulative_reward_values_file = open(f"{agent.output_dir}accumulative_reward_values.txt", "w")
     reward_values_per_episode_file = open(f"{agent.output_dir}reward_values_per_episode_file.txt", "w")
     no_finished_games_file = open(f"{agent.output_dir}no_finished_games_file.txt", "w")
+    steps_per_episode_file = open(f"{agent.output_dir}steps_per_episode_file.txt", "w")
 
     for episode in range(agent.no_episodes):
         print(f"EPISODE{episode}")
 
         agent.accumulative_reward += agent.reward_per_episode
         accumulative_reward_values_file.write(
-            f"episode - {episode}/{agent.no_episodes}, "f"reward = {agent.accumulative_reward}\n")
+            f"episode - {episode}/{agent.no_episodes}, "f"accumulative_reward = {agent.accumulative_reward}\n")
         reward_values_per_episode_file.write(
-            f"episode - {episode}/{agent.no_episodes}, "f"reward = {agent.reward_per_episode}\n")
+            f"episode - {episode}/{agent.no_episodes}, "f"reward_per_episode = {agent.reward_per_episode}\n")
         agent.reward_per_episode = 0
+        agent.steps_per_episode = 0
 
         # Episode lasts until done returns True flag and penalty is given or if aim is reached
         while True:
@@ -129,6 +146,7 @@ def driver():
 
             # perform action
             reward, done, game_finished = env.do_step(action)
+            agent.steps_per_episode += 1
 
             if game_finished:
                 no_finished_games_file.write(f"episode - {episode}/{agent.no_episodes}, STATUS: AIM REACHED\n")
@@ -153,9 +171,12 @@ def driver():
 
             # save weights if the number of episodes is a multiple of 25
             if episode % 25 == 0:
-                agent.save(f"{agent.output_dir}weights/episode_{episode}_weights.hdf5")
+                agent.save(name=f"{agent.output_dir}weights/episode_{episode}_weights.hdf5")
 
             if done:
+                steps_per_episode_file.write(
+                    f"episode - {episode}/{agent.no_episodes}, "f"steps_per_episode = {agent.steps_per_episode}\n"
+                )
                 # if true reset env
                 env.reset_env()
                 # break and take another episode
@@ -166,7 +187,10 @@ def driver():
     epsilon_values_file.close()
     accumulative_reward_values_file.close()
     reward_values_per_episode_file.close()
+    steps_per_episode_file.close()
 
 
 if __name__ == "__main__":
+    # TODO: Za szybko epsilon spada
+    # TODO: Za duże nagrody
     driver()
