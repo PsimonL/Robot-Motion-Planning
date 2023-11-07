@@ -21,10 +21,10 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 ORANGE = (255, 165, 0)
 
-NUM_ROWS = ((INNER_WIDTH) // 100) + 1
-NUM_COLS = ((INNER_HEIGHT) // 100) + 1
-# NUM_ROWS = ((INNER_WIDTH) // 5) + 1
-# NUM_COLS = ((INNER_HEIGHT) // 5) + 1
+# NUM_ROWS = ((INNER_WIDTH) // 100) + 1
+# NUM_COLS = ((INNER_HEIGHT) // 100) + 1
+NUM_ROWS = ((INNER_WIDTH) // 5) + 1
+NUM_COLS = ((INNER_HEIGHT) // 5) + 1
 # NUM_ROWS = INNER_WIDTH
 # NUM_COLS = INNER_HEIGHT
 
@@ -103,8 +103,10 @@ def create_grid(obstacles_coords, room_coords) -> list:
 
     for row in range(1, NUM_ROWS - 1):
         for col in range(1, NUM_COLS - 1):
-            x = col * 100
-            y = row * 100
+            # x = col * 100
+            # y = row * 100
+            x = col * 5
+            y = row * 5
             if is_node_inside_room((x, y), room_coords):
                 node = Nodes(x, y, row, col, nodes_id)
                 nodes_id += 1

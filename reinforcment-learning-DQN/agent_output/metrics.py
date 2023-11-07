@@ -62,6 +62,25 @@ def number_of_completed_tasks(file_name, plot_title, ox_name, oy_name, no_episod
         plt.show()
 
 
+def steps_per_episode(file_name, plot_title, ox_name, oy_name):
+    steps_data = []
+    with open(file_name, 'r') as file:
+        for line in file:
+            if "steps_per_episode" in line:
+                steps_value = float(line.split("= ")[1])
+                steps_data.append(steps_value)
+
+    episodes = list(range(1, len(steps_data) + 1))
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(episodes, steps_data, color='skyblue')
+    plt.title(plot_title)
+    plt.xlabel(ox_name)
+    plt.ylabel(oy_name)
+    plt.grid(True)
+    plt.show()
+
+
 if __name__ == "__main__":
     episode_plots_for_various_metrics(
         file_name="accumulative_reward_values.txt",
@@ -87,12 +106,11 @@ if __name__ == "__main__":
         oy_value="epsilon"
     )
 
-    episode_plots_for_various_metrics(
+    steps_per_episode(
         file_name="steps_per_episode_file.txt",
-        plot_title="Steps/time per episode",
+        plot_title="Steps per episode",
         ox_name="Episode",
-        oy_name="Steps/time",
-        oy_value="steps_per_episode"
+        oy_name="Steps/time"
     )
 
     number_of_completed_tasks(
