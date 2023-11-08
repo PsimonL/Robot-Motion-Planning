@@ -18,13 +18,13 @@ class DQNagent:
     def __init__(self):
         self.state_size = 5
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
-        self.batch_size = 1
-        self.no_episodes = 100
-        # self.max_memory = 100_000
+        self.batch_size = 100
+        self.no_episodes = 1000
+        self.max_memory = 50_000
 
         self.output_dir = "agent_output/"
 
-        self.memory = deque(maxlen=3000)
+        self.memory = deque(maxlen=self.max_memory)
         self.gamma = 0.95
         self.epsilon = 1.0
         self.epsilon_decay = 0.995
@@ -43,11 +43,6 @@ class DQNagent:
             keras.layers.Dense(64, activation='relu'),
             keras.layers.Dense(self.action_size, activation='linear')
         ])
-        # model = keras.models.Sequential()
-        # model.add(keras.layers.Dense(64, input_dim=self.state_size, activation='relu'))
-        # model.add(keras.layers.Dense(64, activation='relu'))
-        # model.add(keras.layers.Dense(64, activation='relu'))
-        # model.add(keras.layers.Dense(self.action_size, activation='linear'))
 
         model.compile(
             optimizer=keras.optimizers.Adam(
@@ -69,24 +64,29 @@ class DQNagent:
         action_values = self.model.predict(state.reshape(1, -1))  # Exploit, over epsilon decay, more exploration.
         return np.argmax(action_values[0])
 
-    def train_model(self):
-        # if len(self.memory) > self.batch_size:
-        #     minibatch = random.sample(self.memory, self.batch_size)
-        # else:
-        #     minibatch = self.memory
-        minibatch = random.sample(self.memory, self.batch_size)
-        print(f"minibatch = {minibatch}")
+    def train_short_memory(self, old_state, action, reward, new_state, done):
+        single_minibatch = [(old_state, action, reward, new_state, done)]
+        self.train_model(single_minibatch, done)
 
-        for state, action, reward, next_sate, done in minibatch:
+    def train_long_memory(self):
+        if len(self.memory) > self.batch_size:
+            minibatch = random.sample(self.memory, self.batch_size)
+        else:
+            minibatch = self.memory
+        self.train_model(minibatch, True)
+
+    def train_model(self, minibatch, is_episode_done):
+        for batchmini in minibatch:
+            state, action, reward, next_state, done = batchmini
             Q_new = reward
             if not done:
-                Q_new = (reward + self.gamma * np.amax(self.model.predict(next_sate)[0]))  # Bellman Equation
+                Q_new = (reward + self.gamma * np.amax(self.model.predict(next_state)[0]))  # Bellman Equation
             target = self.model.predict(state)
             target[0][action] = Q_new
             history = self.model.fit(state, target, epochs=1, verbose=1)  # verbose=0
             self.loss = history.history['loss']
 
-        if self.epsilon > self.epsilon_min:
+        if is_episode_done is True and self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
     def load(self, name, should_load):
@@ -145,10 +145,10 @@ def driver():
             action = agent.get_action(old_state)
 
             # perform action
-            reward, done, game_finished = env.do_step(action)
+            reward, done, episode_finished = env.do_step(action)
             agent.steps_per_episode += 1
 
-            if game_finished:
+            if episode_finished:
                 no_finished_games_file.write(f"episode - {episode}/{agent.no_episodes}, STATUS: AIM REACHED\n")
 
             agent.reward_per_episode += reward
@@ -163,21 +163,17 @@ def driver():
             # remember feedback to train deep neural network
             agent.remember(old_state, action, reward, new_state, done)
 
-            if len(agent.memory) > agent.batch_size:
-                agent.train_model()
-
-                loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss[0]}\n")
-                epsilon_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"epsilon = {agent.epsilon}\n")
-
-            # save weights if the number of episodes is a multiple of 25
-            if episode % 25 == 0:
-                agent.save(name=f"{agent.output_dir}weights/episode_{episode}_weights.hdf5")
+            # use short memory to train
+            agent.train_short_memory(old_state, action, reward, new_state, done)
 
             if done:
-                steps_per_episode_file.write(
-                    f"episode - {episode}/{agent.no_episodes}, "f"steps_per_episode = {agent.steps_per_episode}\n"
-                )
-                # if true reset env
+                # use long memory to train
+                agent.train_long_memory()
+                agent.save(name=f"{agent.output_dir}weights/episode_{episode}_weights.hdf5")
+                steps_per_episode_file.write(f"episode - {episode}/{agent.no_episodes}, "f"steps_per_episode = {agent.steps_per_episode}\n")
+                loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss[0]}\n")
+                epsilon_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"epsilon = {agent.epsilon}\n")
+                # reset env
                 env.reset_env()
                 # break and take another episode
                 break
@@ -191,6 +187,5 @@ def driver():
 
 
 if __name__ == "__main__":
-    # TODO: Za szybko epsilon spada
-    # TODO: Za duże nagrody
+    print("Start")
     driver()

@@ -6,6 +6,7 @@ import geometry
 from typing import Tuple
 from numba import cuda, jit
 
+
 class RobotSimulation:
     def __init__(self):
         pygame.init()
@@ -19,6 +20,7 @@ class RobotSimulation:
         self.RED = (255, 0, 0)
         self.YELLOW = (255, 255, 0)
         self.GREEN = (0, 255, 0)
+        self.ORANGE = (255, 165, 0)
 
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         pygame.display.set_caption("DQN Path Finding")
@@ -150,7 +152,7 @@ class RobotSimulation:
         # end if finish
         self.current_distance_to_aim()
         if self.current_distance_to_finish <= 5:
-            self.reward = 100
+            self.reward = 10
             reset_flag = True
             game_finished = True
             return self.reward, reset_flag, game_finished
@@ -160,31 +162,31 @@ class RobotSimulation:
         # penalty/price for direction
         self.current_direction_to_aim()
         if self.flag_x == 2 or self.flag_y == 2:
-            self.reward += 30
+            self.reward += 3
         else:
-            self.reward += -30
+            self.reward += -3
 
         # if robot getting closer
         distance_difference = self.previous_distance_to_finish - self.current_distance_to_finish
         print(f"distance_difference = {distance_difference}")
         if distance_difference < 0:
-            self.reward += -10
+            self.reward += -1
         elif distance_difference > 0:
-            self.reward += 100
+            self.reward += 7.5
         else:
             self.reward += 0
         self.previous_distance_to_finish = self.current_distance_to_finish
 
-        # collision penalty
+        # obstacle collision penalty
         for obstacle in self.obstacles:
             if geometry.check_collision(self.robot, obstacle.rect):
-                self.reward += -75
+                self.reward += -7.5
                 reset_flag = True
                 return self.reward, reset_flag, game_finished
 
         # too long time penalty
         if len(self.trail_points) > self.time_penalty_margin:
-            self.reward += -100
+            self.reward += -10
             reset_flag = True
             return self.reward, reset_flag, game_finished
 
