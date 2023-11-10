@@ -14,12 +14,19 @@
 
 
 
-import ctypes
-loader = ctypes.LibraryLoader(ctypes.WinDLL if ctypes.windll else ctypes.CDLL)  # Wybiera odpowiednią funkcję w zależności od systemu
+# import ctypes
+# loader = ctypes.LibraryLoader(ctypes.WinDLL if ctypes.windll else ctypes.CDLL)  # Wybiera odpowiednią funkcję w zależności od systemu
+#
+# mylibrary = loader.LoadLibrary(r'C:\Users\szymo\CLionProjects\untitled\cmake-build-debug\libprinter_stuff.dll')
+#
+# result = mylibrary.nazwa_funkcji()  # Zmień 'nazwa_funkcji' na nazwę funkcji, którą chcesz wywołać
+#
+# print("Wynik funkcji:", result)
 
-mylibrary = loader.LoadLibrary(r'C:\Users\szymo\CLionProjects\untitled\cmake-build-debug\libprinter_stuff.dll')
 
-result = mylibrary.nazwa_funkcji()  # Zmień 'nazwa_funkcji' na nazwę funkcji, którą chcesz wywołać
+import module_name
 
-print("Wynik funkcji:", result)
+print(module_name.some_fn_python_name(1, 2))
 
+lista = []
+lista.appen
