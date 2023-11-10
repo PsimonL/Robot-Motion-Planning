@@ -1,7 +1,7 @@
 import random
 import os
 # import torch
-# import environment
+
 # import tensorflow as tf
 # import random as rd
 import numpy as np
@@ -11,7 +11,7 @@ import keras.optimizers
 from collections import deque
 from numba import cuda, jit
 
-from environment import RobotSimulation
+import environment
 
 
 class DQNagent:
@@ -113,7 +113,7 @@ def driver():
     # initialize agent and env
     agent = DQNagent()
     agent.load(name=None, should_load=False)
-    env = RobotSimulation()
+    env = environment.RobotSimulation()
 
     if not os.path.exists(agent.output_dir):
         os.makedirs(agent.output_dir)
