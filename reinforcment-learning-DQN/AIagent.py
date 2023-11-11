@@ -1,8 +1,7 @@
 import random
 import os
 # import torch
-
-# import tensorflow as tf
+import tensorflow as tf
 # import random as rd
 import numpy as np
 import keras.models
@@ -12,6 +11,23 @@ from collections import deque
 from numba import cuda, jit
 
 import environment
+
+
+def configure_tensorflow(use_gpu):
+    physical_devices = tf.config.experimental.list_physical_devices('GPU')
+    print("Dostępne urządzenia GPU:", physical_devices)
+    if use_gpu:
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        if gpus:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+            print("GPU dostępne i skonfigurowane.")
+        else:
+            print("Nie znaleziono urządzenia GPU. Uczenie będzie odbywać się na CPU.")
+    else:
+        tf.config.set_visible_devices([], 'GPU')
+        print("Uczenie będzie odbywać się na CPU.")
 
 
 class DQNagent:
@@ -92,7 +108,7 @@ class DQNagent:
     def load(self, name, should_load):
         if should_load:
             if name is not None:
-                self.model.load_weights(name)
+                self.model.load_weights(f"{agent.output_dir}weights/{name}")
             else:
                 files = os.listdir(f"{self.output_dir}weights/")
                 files = [file for file in files if file.startswith("episode_") and file.endswith("weights.hdf5")]
@@ -188,4 +204,5 @@ def driver():
 
 if __name__ == "__main__":
     print("Start")
+    configure_tensorflow(use_gpu=False)
     driver()

@@ -1,3 +1,6 @@
+# TODO: change list for numpy arrays
+# TODO: reafctor code for CUDA GPU 
+
 import pygame
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon

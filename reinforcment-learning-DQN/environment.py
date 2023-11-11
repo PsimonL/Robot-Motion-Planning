@@ -11,6 +11,7 @@ from numba import cuda, jit
 
 class RobotSimulation:
     def __init__(self):
+        self.shouldVisualize = True;
         pygame.init()
 
         self.size, self.inner_size = 650, 600
@@ -214,5 +215,6 @@ class RobotSimulation:
             reset_flag = True
             return self.reward, reset_flag, game_finished
 
-        self.ui_runner()
+        if self.shouldVisualize:
+            self.ui_runner()
         return self.reward, reset_flag, game_finished
