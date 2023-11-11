@@ -1,7 +1,11 @@
+# TODO: change list for numpy arrays
+# TODO: reafctor code for CUDA GPU 
+
 import pygame
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 from numba import cuda, jit
+import numpy as np
 import time
 import multiprocessing
 
@@ -28,12 +32,7 @@ NUM_COLS = ((INNER_HEIGHT) // 5) + 1
 # NUM_ROWS = INNER_WIDTH
 # NUM_COLS = INNER_HEIGHT
 
-THRASH_NODES = set()
-
-
-# class Environment:
-#     def __init__(self):
-
+THRASH_NODES = np.array([], dtype=object)
 
 class Nodes:
     def __init__(self, x, y, row, col, node_id):
@@ -90,7 +89,7 @@ def is_node_inside_obstacle(node, obstacles_coords):
     for obstacles_coord in obstacles_coords:
         obstacle_x, obstacle_y, width, height = obstacles_coord
         if obstacle_x <= node_x < obstacle_x + width and obstacle_y <= node_y < obstacle_y + height:
-            THRASH_NODES.add(node)
+            np.append(THRASH_NODES, node)
             return True
     return False
 
@@ -248,46 +247,6 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, path):
     pygame.quit()
 
 
-# def create_grid_helper(args):
-#     obstacles_coords, start, end, NUM_COLS = args
-#     grid = []
-#     for row in range(start, end):
-#         for col in range(NUM_COLS):
-#             if row * NUM_COLS + col < len(grid):
-#                 # x = MARGIN_X + col * 5
-#                 # y = MARGIN_Y + row * 5
-#                 # node = Nodes(x, y, row, col)
-#                 # grid.append(node)
-#                 node = Nodes(0, 0, row, col)
-#                 grid.append(node)
-#
-#     set_neighbours(grid, obstacles_coords)
-#
-#     return grid
-#
-#
-# def create_grid_parallel(obstacles_coords) -> list:
-#     grid = []
-#
-#     processes = 2 # Dwa procesy
-#     pool = multiprocessing.Pool(processes)
-#
-#     split = NUM_ROWS // processes
-#     starts = [i * split for i in range(processes)]
-#     ends = [(i + 1) * split if i < processes - 1 else NUM_ROWS for i in range(processes)]
-#
-#     args = [(obstacles_coords, starts[i], ends[i], NUM_COLS) for i in range(processes)]
-#     results = pool.map(create_grid_helper, args)
-#
-#     for result in results:
-#         grid.extend(result)
-#
-#     pool.close()
-#     pool.join()
-#
-#     return grid
-
-
 if __name__ == "__main__":
     # start_point = (300, 200)
     # goal_point = (300, 500)
@@ -306,7 +265,6 @@ if __name__ == "__main__":
     obstacles = get_obstacles(obstacles_coords)
 
     if not is_obstacle_inside_room(room_coords, obstacles_coords):
-        # raise RuntimeError("")
         raise Exception("Obstacles outside of room!")
 
     # start_time = time.time()
@@ -317,6 +275,7 @@ if __name__ == "__main__":
 
     # end_time = time.time()
     # print("Single process ", end_time - start_time)
+
     # start_time_m = time.time()
     # grid_m = create_grid_parallel(obstacles_coords)
     # end_time_m = time.time()

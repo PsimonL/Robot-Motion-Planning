@@ -4,14 +4,21 @@ import numpy as np
 import shapes
 import geometry
 from typing import Tuple
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
 from numba import cuda, jit
+
 
 class RobotSimulation:
     def __init__(self):
+        self.shouldVisualize = True;
         pygame.init()
 
-        self.SCREEN_WIDTH = 700
-        self.SCREEN_HEIGHT = 700
+        self.size, self.inner_size = 650, 600
+        self.SCREEN_WIDTH = self.size
+        self.SCREEN_HEIGHT = self.size
+        self.ADJUST_VECTOR = (self.size - self.inner_size) // 2
+
         self.FPS = 60
 
         self.WHITE = (255, 255, 255)
@@ -19,6 +26,7 @@ class RobotSimulation:
         self.RED = (255, 0, 0)
         self.YELLOW = (255, 255, 0)
         self.GREEN = (0, 255, 0)
+        self.ORANGE = (255, 165, 0)
 
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         pygame.display.set_caption("DQN Path Finding")
@@ -28,9 +36,11 @@ class RobotSimulation:
         self.time_penalty_margin = None
         self.correction_xy_start = None
         self.reward, self.frame_iteration = 0, -1
-        self.trail_points, self.robot, self.obstacles = None, None, None
+        self.trail_points, self.robot, self.obstacles, self.room_coords = None, None, None, None
 
         self.flag_x, self.flag_y = None, None
+
+        self.room = None
 
         self.previous_distance_to_finish = 6
         self.current_distance_to_finish = 6
@@ -55,6 +65,9 @@ class RobotSimulation:
         self.flag_y = 2
 
         self.trail_points = []
+
+        self.room_coords = [(0, 0), (600, 0), (600, 600), (0, 600)]
+        self.room = Polygon(self.room_coords)
 
         self.obstacles = [
             # shapes.Obstacle(200, 100, 100, 50),
@@ -131,6 +144,10 @@ class RobotSimulation:
         for obstacle in self.obstacles:
             pygame.draw.rect(self.screen, obstacle.BLUE, obstacle.rect)
 
+        if len(self.room_coords) > 1:
+            pygame.draw.lines(self.screen, self.ORANGE, True,
+                              [(x + self.ADJUST_VECTOR, y + self.ADJUST_VECTOR) for x, y in self.room_coords], 1)
+
         if len(self.trail_points) > 1:
             pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
         pygame.display.update()
@@ -150,7 +167,7 @@ class RobotSimulation:
         # end if finish
         self.current_distance_to_aim()
         if self.current_distance_to_finish <= 5:
-            self.reward = 100
+            self.reward = 10
             reset_flag = True
             game_finished = True
             return self.reward, reset_flag, game_finished
@@ -160,33 +177,44 @@ class RobotSimulation:
         # penalty/price for direction
         self.current_direction_to_aim()
         if self.flag_x == 2 or self.flag_y == 2:
-            self.reward += 30
+            self.reward += 3
         else:
-            self.reward += -30
+            self.reward += -3
 
         # if robot getting closer
         distance_difference = self.previous_distance_to_finish - self.current_distance_to_finish
         print(f"distance_difference = {distance_difference}")
         if distance_difference < 0:
-            self.reward += -10
+            self.reward += -1
         elif distance_difference > 0:
-            self.reward += 100
+            self.reward += 7.5
         else:
             self.reward += 0
         self.previous_distance_to_finish = self.current_distance_to_finish
 
-        # collision penalty
+        # obstacle collision penalty
         for obstacle in self.obstacles:
             if geometry.check_collision(self.robot, obstacle.rect):
-                self.reward += -75
+                self.reward += -7.5
                 reset_flag = True
                 return self.reward, reset_flag, game_finished
 
-        # too long time penalty
-        if len(self.trail_points) > self.time_penalty_margin:
-            self.reward += -100
+        # room wall penalty
+        current_coords = Point(self.robot.x, self.robot.y)
+        is_inside_room = self.room.contains(current_coords)
+        if is_inside_room:
+            self.reward += 2
+        else:
+            self.reward -= 10
             reset_flag = True
             return self.reward, reset_flag, game_finished
 
-        self.ui_runner()
+        # too long time penalty
+        if len(self.trail_points) > self.time_penalty_margin:
+            self.reward += -10
+            reset_flag = True
+            return self.reward, reset_flag, game_finished
+
+        if self.shouldVisualize:
+            self.ui_runner()
         return self.reward, reset_flag, game_finished
