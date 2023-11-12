@@ -9,6 +9,7 @@ import keras.layers
 import keras.optimizers
 from collections import deque
 from numba import cuda, jit
+from datetime import datetime
 
 import environment
 
@@ -105,7 +106,7 @@ class DQNagent:
         if is_episode_done is True and self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    def load(self, name, should_load):
+    def load(self, name, should_load, agent):
         if should_load:
             if name is not None:
                 self.model.load_weights(f"{agent.output_dir}weights/{name}")
@@ -128,12 +129,16 @@ class DQNagent:
 def driver():
     # initialize agent and env
     agent = DQNagent()
-    agent.load(name=None, should_load=False)
+    agent.load(name=None, should_load=False, agent=agent)
     env = environment.RobotSimulation()
 
     if not os.path.exists(agent.output_dir):
         os.makedirs(agent.output_dir)
 
+    start_time = datetime.now()
+    start_time_str = start_time.strftime("%Y-%m-%d %H:%M:%S")
+    with open(f"{agent.output_dir}execution_time.txt", "a") as execution_time_file:
+        execution_time_file.write(f"Execution started at: {start_time_str}\n")
     epsilon_values_file = open(f"{agent.output_dir}epsilon_values.txt", "w")
     loss_values_file = open(f"{agent.output_dir}loss_values.txt", "w")
     accumulative_reward_values_file = open(f"{agent.output_dir}accumulative_reward_values.txt", "w")
@@ -194,6 +199,15 @@ def driver():
                 # break and take another episode
                 break
 
+    end_time = datetime.now()
+    end_time_str = end_time.strftime("%Y-%m-%d %H:%M:%S")
+    elapsed_time = end_time - start_time
+    with open(f"{agent.output_dir}execution_time.txt", "a") as execution_time_file:
+        execution_time_file.write(f"Execution finished at: {end_time_str}\n")
+        execution_time_file.write(f"Total execution time: {elapsed_time}\n")
+        execution_time_file.write("================================================\n")
+
+    execution_time_file.close()
     no_finished_games_file.close()
     loss_values_file.close()
     epsilon_values_file.close()
