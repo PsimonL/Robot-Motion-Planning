@@ -1,0 +1,4 @@
+C:/Users/szymo/Desktop/lol/build/CMakeFiles/module_name.dir
+C:/Users/szymo/Desktop/lol/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/szymo/Desktop/lol/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/szymo/Desktop/lol/build/pybind11/CMakeFiles/ALL_BUILD.dir

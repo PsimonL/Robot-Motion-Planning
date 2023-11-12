@@ -1,0 +1,10 @@
+^C:\USERS\SZYMO\DESKTOP\LOL\BUILD\CMAKEFILES\99B8C435D1174F29DE0D706C62ABC9E4\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/szymo/Desktop/lol -BC:/Users/szymo/Desktop/lol/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/szymo/Desktop/lol/build/pybindings.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
