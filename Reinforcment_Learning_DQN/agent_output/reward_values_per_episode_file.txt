@@ -1,2 +1,0 @@
-episode - 0/1000, reward_per_episode = 0
-episode - 1/1000, reward_per_episode = 1.5

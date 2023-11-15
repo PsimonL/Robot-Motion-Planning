@@ -12,14 +12,13 @@ from numba import cuda, jit
 class RobotSimulation:
     def __init__(self):
         self.shouldVisualize = True
-        pygame.init()
 
         self.size, self.inner_size = 650, 600
         self.SCREEN_WIDTH = self.size
         self.SCREEN_HEIGHT = self.size
         self.ADJUST_VECTOR = (self.size - self.inner_size) // 2
 
-        self.FPS = 60
+        self.FPS = 40
 
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
@@ -28,14 +27,10 @@ class RobotSimulation:
         self.GREEN = (0, 255, 0)
         self.ORANGE = (255, 165, 0)
 
-        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
-        pygame.display.set_caption("DQN Path Finding")
-        self.clock = pygame.time.Clock()
-
         self.start_x, self.start_y, self.finish_x, self.finish_y = None, None, None, None
         self.time_penalty_margin = None
         self.correction_xy_start = None
-        self.reward, self.frame_iteration = 0, -1
+        self.reward, self.step_iterator = 0, -1
         self.trail_points, self.robot, self.obstacles, self.room_coords = None, None, None, None
 
         self.flag_x, self.flag_y = None, None
@@ -45,11 +40,17 @@ class RobotSimulation:
         self.previous_distance_to_finish = 6
         self.current_distance_to_finish = 6
 
+        if self.shouldVisualize:
+            pygame.init()
+            self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+            pygame.display.set_caption("DQN Path Finding")
+            self.clock = pygame.time.Clock()
+
         self.reset_env()
 
     def reset_env(self):
-        print("RESET ENV CALL")
-        self.frame_iteration = 0
+        # print("RESET ENV CALL")
+        self.step_iterator = 0
 
         self.start_x = 200
         self.start_y = 200
@@ -59,7 +60,7 @@ class RobotSimulation:
         self.reward = 0
         self.time_penalty_margin = 15
         self.correction_xy_start = 20
-        self.robot = shapes.FloatRect(self.start_x, self.start_y, self.correction_xy_start, self.correction_xy_start)
+        self.robot = shapes.FloatRect(self.start_x, self.start_y, 20, 20)
 
         self.flag_x = 2
         self.flag_y = 2
@@ -96,7 +97,7 @@ class RobotSimulation:
             self.flag_y = 2
 
     def get_states(self) -> np.array:
-        print(f"GET_STATES() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
+        # print(f"GET_STATES() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
         return np.array([self.robot.x, self.robot.y, self.current_distance_to_finish, self.flag_x, self.flag_y])
 
     def move_robot(self, action):
@@ -124,19 +125,20 @@ class RobotSimulation:
         speed = dd
         self.robot.x = max(0, min(self.SCREEN_WIDTH - self.robot.width, self.robot.x + dx * speed))
         self.robot.y = max(0, min(self.SCREEN_HEIGHT - self.robot.height, self.robot.y + dy * speed))
-        print(f"MOVE_ROBOT() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
+        # print(f"MOVE_ROBOT() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
         self.trail_points.append((self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height / 2))
 
     def ui_runner(self):
-        self.clock.tick(self.FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
         self.screen.fill(self.BLACK)
 
-        pygame.draw.circle(self.screen, self.YELLOW, (self.start_x, self.start_y), 10)
-        pygame.draw.circle(self.screen, self.GREEN, (self.finish_x, self.finish_y), 10)
+        pygame.draw.rect(self.screen, self.YELLOW,
+                         pygame.Rect(self.start_x, self.start_y, self.robot.width, self.robot.height))
+        pygame.draw.rect(self.screen, self.GREEN,
+                         pygame.Rect(self.finish_x, self.finish_y, self.robot.width, self.robot.height))
 
         pygame.draw.rect(self.screen, self.RED,
                          pygame.Rect(self.robot.x, self.robot.y, self.robot.width, self.robot.height))
@@ -148,17 +150,18 @@ class RobotSimulation:
             pygame.draw.lines(self.screen, self.ORANGE, True,
                               [(x + self.ADJUST_VECTOR, y + self.ADJUST_VECTOR) for x, y in self.room_coords], 1)
 
-        if len(self.trail_points) > 1:
-            pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
+        # if len(self.trail_points) > 1:
+        #     pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
         pygame.display.update()
 
     def do_step(self, action: int) -> Tuple[int, bool, bool]:
-        self.frame_iteration += 1
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-        print(f"frame {self.frame_iteration}")
+        self.step_iterator += 1
+        if self.shouldVisualize:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+
         self.move_robot(action)
 
         reset_flag = False
@@ -183,9 +186,8 @@ class RobotSimulation:
 
         # if robot getting closer
         distance_difference = self.previous_distance_to_finish - self.current_distance_to_finish
-        print(f"distance_difference = {distance_difference}")
         if distance_difference < 0:
-            self.reward += -1
+            self.reward += -7.5
         elif distance_difference > 0:
             self.reward += 7.5
         else:
@@ -210,11 +212,12 @@ class RobotSimulation:
             return self.reward, reset_flag, game_finished
 
         # too long time penalty
-        if len(self.trail_points) > self.time_penalty_margin:
+        if self.step_iterator > self.time_penalty_margin:
             self.reward += -10
             reset_flag = True
             return self.reward, reset_flag, game_finished
 
         if self.shouldVisualize:
             self.ui_runner()
+            self.clock.tick(self.FPS)
         return self.reward, reset_flag, game_finished

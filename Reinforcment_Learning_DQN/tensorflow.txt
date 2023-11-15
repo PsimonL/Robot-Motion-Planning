@@ -1,36 +1,65 @@
-import random
-import os
-import torch
-import torch.nn as nn
-import torch.optim as optim
+import tensorflow as tf
 import numpy as np
+import os
 from collections import deque
 from datetime import datetime
 import time
-
 import environment
 
 
-def configure_pytorch(use_gpu):  # Tensorflow sets GPU automatically (even without Keras), Pytorch doesn't.
-    if use_gpu and torch.cuda.is_available():
-        print("GPU dostępne i skonfigurowane.")
+def configure_tensorflow(use_gpu):
+    physical_devices = tf.config.experimental.list_physical_devices('GPU')
+    print("Dostępne urządzenia GPU:", physical_devices)
+    if use_gpu:
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        if gpus:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+            print("GPU dostępne i skonfigurowane.")
+        else:
+            print("Nie znaleziono urządzenia GPU. Uczenie będzie odbywać się na CPU.")
     else:
-        print("Nie znaleziono urządzenia GPU. Uczenie będzie odbywać się na CPU.")
+        tf.config.set_visible_devices([], 'GPU')
+        print("Uczenie będzie odbywać się na CPU.")
 
 
-class QNetwork(nn.Module):  # Predict future reward using regression for DQN agent.
+class QNetwork(tf.keras.Model):
     def __init__(self, state_size, action_size):
         super(QNetwork, self).__init__()
-        self.dense1 = nn.Linear(state_size, 64)
-        self.relu1 = nn.ReLU()
-        self.dense2 = nn.Linear(64, 64)
-        self.relu2 = nn.ReLU()
-        self.dense3 = nn.Linear(64, action_size)
+        self.input_layer = tf.keras.layers.Input(shape=(state_size,))
+        self.dense1 = tf.keras.layers.Dense(64, activation='relu')
+        self.dense2 = tf.keras.layers.Dense(64, activation='relu')
+        self.dense3 = tf.keras.layers.Dense(action_size, activation='linear')
 
-    def forward(self, x):
-        x = self.relu1(self.dense1(x))
-        x = self.relu2(self.dense2(x))
+    def call(self, x):
+        x = tf.nn.relu(self.dense1(x))
+        x = tf.nn.relu(self.dense2(x))
         return self.dense3(x)
+
+    def train_step(self, state, action, reward, next_state, done, gamma, learning_rate):
+        with tf.GradientTape() as tape:
+            Q_values = self(state)
+            Q_action = tf.reduce_sum(tf.multiply(Q_values, tf.one_hot(action, self.dense3.units)), axis=1)
+            Q_target = reward + (1 - done) * gamma * tf.reduce_max(self(next_state), axis=1)
+            loss = tf.reduce_mean(tf.square(Q_action - Q_target))
+
+        gradients = tape.gradient(loss, self.trainable_variables)
+        optimizer = tf.optimizers.Adam(learning_rate=learning_rate)
+        optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+        return loss.numpy()
+
+    def train_step(self, state, action, reward, next_state, done, gamma, learning_rate):
+        with tf.GradientTape() as tape:
+            Q_values = self(state)
+            Q_action = tf.reduce_sum(tf.multiply(Q_values, tf.one_hot(action, self.action_size)), axis=1)
+            Q_target = reward + (1 - done) * gamma * tf.reduce_max(self(next_state), axis=1)
+            loss = tf.reduce_mean(tf.square(Q_action - Q_target))
+
+        gradients = tape.gradient(loss, self.trainable_variables)
+        optimizer = tf.optimizers.Adam(learning_rate=learning_rate)
+        optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+        return loss.numpy()
 
 
 class DQNagent:
@@ -53,18 +82,22 @@ class DQNagent:
         self.reward_per_episode = 0
         self.accumulative_reward = 0
         self.steps_per_episode = 0
-        self.q_network = QNetwork(self.state_size, self.action_size)
-        self.optimizer = optim.Adam(self.q_network.parameters(), lr=self.learning_rate)
+        self.model = self._build_model()
+
+    def _build_model(self):  # Predict future reward using regression for DQN agent.
+        return QNetwork(self.state_size, self.action_size)
 
     def remember(self, state, action, reward, next_state, done):  # done for episode
         self.memory.append((state, action, reward, next_state, done))
 
     def get_action(self, state):  # Based on epsilon explore randomly or exploit current data.
         if np.random.rand() <= self.epsilon:  # Exploration mode.
-            return random.randrange(self.action_size)
-        state_tensor = torch.from_numpy(state).float()
-        action_values = self.q_network(state_tensor)  # Exploit, over epsilon decay, more exploration.
-        return np.argmax(action_values.detach().numpy())
+            return np.random.choice(self.action_size)
+        # print("=====================================================")
+        state = np.expand_dims(state, axis=0)
+        state_tensor = tf.convert_to_tensor(state, dtype=tf.float32)
+        action_values = self.model(state_tensor)  # Exploit, over epsilon decay, more exploration.
+        return tf.argmax(action_values[0]).numpy()
 
     def train_short_memory(self, old_state, action, reward, new_state, done):
         single_minibatch = [(old_state, action, reward, new_state, done)]
@@ -72,29 +105,27 @@ class DQNagent:
 
     def train_long_memory(self):
         if len(self.memory) > self.batch_size:
-            minibatch = random.sample(self.memory, self.batch_size)
+            minibatch = np.random.sample(self.memory, self.batch_size)
         else:
             minibatch = self.memory
         self.train_model(minibatch, True)
 
     def train_model(self, minibatch, is_episode_done):
-        criterion = nn.MSELoss()
-
         for batchmini in minibatch:
             state, action, reward, next_state, done = batchmini
-            state_tensor = torch.from_numpy(state).float()
-            next_state_tensor = torch.from_numpy(next_state).float()
-            Q_values = self.q_network(state_tensor)
-            Q_action = Q_values[0][action]
+            state_tensor = tf.convert_to_tensor(state, dtype=tf.float32)
+            next_state_tensor = tf.convert_to_tensor(next_state, dtype=tf.float32)
 
-            Q_target = reward + (1 - done) * self.gamma * torch.max(self.q_network(next_state_tensor))   # Bellman Equation
-            loss = criterion(Q_action, Q_target)
+            with tf.GradientTape() as tape:
+                Q_values = self.model(state_tensor)
+                Q_action = tf.reduce_sum(tf.multiply(Q_values, tf.one_hot(action, self.action_size)), axis=1)
+                Q_target = reward + (1 - done) * self.gamma * tf.reduce_max(self.model(next_state_tensor), axis=1)  # Bellman Equation
+                loss = tf.reduce_mean(tf.square(Q_action - Q_target))
 
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-
-            self.loss = loss.item()
+            gradients = tape.gradient(loss, self.model.trainable_variables)
+            optimizer = tf.optimizers.Adam(learning_rate=self.learning_rate)
+            optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
+            self.loss.append(loss.numpy())
 
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
@@ -102,20 +133,20 @@ class DQNagent:
     def load(self, name, should_load, agent):
         if should_load:
             if name is not None:
-                self.q_network.load_state_dict(torch.load(f"{agent.output_dir}weights/{name}"))
+                self.model.load_weights(f"{agent.output_dir}weights/{name}")
             else:
                 files = os.listdir(f"{self.output_dir}weights/")
-                files = [file for file in files if file.startswith("episode_") and file.endswith(".pt")]
+                files = [file for file in files if file.startswith("episode_") and file.endswith("weights.hdf5")]
                 if files:
                     latest_file = files[-1]
-                    self.q_network.load_state_dict(torch.load(f"{agent.output_dir}weights/{latest_file}"))
+                    self.model.load_weights(f"{agent.output_dir}weights/{latest_file}")
                 else:
                     print("No weight files found.")
         else:
             pass
 
     def save(self, name):
-        torch.save(self.q_network.state_dict(), f"{name}")
+        self.model.save_weights(name)
 
 
 def driver():
@@ -177,10 +208,10 @@ def driver():
             if done:
                 # use long memory to train
                 agent.train_long_memory()
-                agent.save(name=f"{agent.output_dir}weights/episode_{episode}_weights.pt")
+                agent.save(name=f"{agent.output_dir}weights/episode_{episode}_weights.hdf5")
                 steps_per_episode_file.write(
                     f"episode - {episode}/{agent.no_episodes}, "f"steps_per_episode = {agent.steps_per_episode}\n")
-                loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss}\n")
+                loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss[0]}\n")
                 epsilon_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"epsilon = {agent.epsilon}\n")
                 # reset env
                 env.reset_env()
@@ -207,8 +238,8 @@ def driver():
 if __name__ == "__main__":
     start_time = time.time()
     print("Start")
-    configure_pytorch(use_gpu=False)
+    configure_tensorflow(use_gpu=False)
     driver()
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"Czas wykonania: {execution_time} sekundy")  # Czas wykonania: 12.388508558273315 sekundy
+    print(f"Czas wykonania: {execution_time} sekundy")  # Czas wykonania: 16.360511541366577 sekundy
