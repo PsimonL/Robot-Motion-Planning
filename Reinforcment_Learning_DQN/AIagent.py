@@ -40,9 +40,8 @@ class DQNagent:
         self.batch_size = 100
         self.no_episodes = 30
         self.max_memory = 50_000
-
+        self.trial_points_memory = []
         self.output_dir = "agent_output/"
-
         self.memory = deque(maxlen=self.max_memory)
         self.gamma = 0.95
         self.epsilon = 1.0
@@ -98,6 +97,11 @@ class DQNagent:
 
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
+
+    def find_shortest_path(self):
+        if not self.trial_points_memory:
+            return None
+        return min(self.trial_points_memory, key=len)
 
     def load(self, name, should_load, agent):
         if should_load:
@@ -157,7 +161,9 @@ def driver():
             action = agent.get_action(old_state)
             print("action = ", action)
             # perform action
-            reward, done, episode_finished = env.do_step(action)
+            reward, done, episode_finished, trial_points = env.do_step(action)
+            agent.trial_points_memory.append(trial_points)
+
             agent.steps_per_episode += 1
 
             if episode_finished:
@@ -177,7 +183,6 @@ def driver():
             if done:
                 # use long memory to train
                 agent.train_long_memory()
-                agent.save(name=f"{agent.output_dir}weights/episode_{episode}_weights.pt")
                 steps_per_episode_file.write(
                     f"episode - {episode}/{agent.no_episodes}, "f"steps_per_episode = {agent.steps_per_episode}\n")
                 loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss}\n")
@@ -186,6 +191,9 @@ def driver():
                 env.reset_env()
                 # break and take another episode
                 break
+
+            if agent.no_episodes % 50 == 0:
+                agent.save(name=f"{agent.output_dir}weights/episode_{episode}_weights.pt")
 
     end_time = datetime.now()
     end_time_str = end_time.strftime("%Y-%m-%d %H:%M:%S")
@@ -203,12 +211,15 @@ def driver():
     reward_values_per_episode_file.close()
     steps_per_episode_file.close()
 
+    shortest_path = agent.find_shortest_path()
+    print(f"shortest_path = {shortest_path}")
 
-if __name__ == "__main__":
+
+if __name__ == "__main__":  # lookforward
     start_time = time.time()
     print("Start")
     configure_pytorch(use_gpu=False)
     driver()
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"Czas wykonania: {execution_time} sekundy")  # Czas wykonania: 12.388508558273315 sekundy
+    print(f"Czas wykonania: {execution_time} sekundy")  # Czas wykonania 100 epizodów: 12.388508558273315 sekundy

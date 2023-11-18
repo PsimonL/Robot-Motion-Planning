@@ -154,7 +154,7 @@ class RobotSimulation:
         #     pygame.draw.lines(self.screen, self.WHITE, False, self.trail_points, 1)
         pygame.display.update()
 
-    def do_step(self, action: int) -> Tuple[int, bool, bool]:
+    def do_step(self, action: int) -> Tuple[int, bool, bool, list]:
         self.step_iterator += 1
         if self.shouldVisualize:
             for event in pygame.event.get():
@@ -170,19 +170,19 @@ class RobotSimulation:
         # end if finish
         self.current_distance_to_aim()
         if self.current_distance_to_finish <= 5:
-            self.reward = 10
+            self.reward = 100
             reset_flag = True
             game_finished = True
-            return self.reward, reset_flag, game_finished
+            return self.reward, reset_flag, game_finished, self.trail_points
         else:
             self.reward = 0
 
         # penalty/price for direction
-        self.current_direction_to_aim()
-        if self.flag_x == 2 or self.flag_y == 2:
-            self.reward += 3
-        else:
-            self.reward += -3
+        # self.current_direction_to_aim()
+        # if self.flag_x == 2 or self.flag_y == 2:
+        #     self.reward += 3
+        # else:
+        #     self.reward += -3
 
         # if robot getting closer
         distance_difference = self.previous_distance_to_finish - self.current_distance_to_finish
@@ -199,7 +199,7 @@ class RobotSimulation:
             if geometry.check_collision(self.robot, obstacle.rect):
                 self.reward += -7.5
                 reset_flag = True
-                return self.reward, reset_flag, game_finished
+                return self.reward, reset_flag, game_finished, self.trail_points
 
         # room wall penalty
         current_coords = Point(self.robot.x, self.robot.y)
@@ -209,15 +209,15 @@ class RobotSimulation:
         else:
             self.reward -= 10
             reset_flag = True
-            return self.reward, reset_flag, game_finished
+            return self.reward, reset_flag, game_finished, self.trail_points
 
         # too long time penalty
         if self.step_iterator > self.time_penalty_margin:
-            self.reward += -10
+            self.reward += -100
             reset_flag = True
-            return self.reward, reset_flag, game_finished
+            return self.reward, reset_flag, game_finished, self.trail_points
 
         if self.shouldVisualize:
             self.ui_runner()
             self.clock.tick(self.FPS)
-        return self.reward, reset_flag, game_finished
+        return self.reward, reset_flag, game_finished, self.trail_points
