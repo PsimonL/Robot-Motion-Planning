@@ -1,7 +1,11 @@
+# TODO: change list for numpy arrays
+# TODO: reafctor code for CUDA GPU 
+
 import pygame
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 from numba import cuda, jit
+import numpy as np
 import time
 import multiprocessing
 
@@ -28,11 +32,7 @@ NUM_COLS = ((INNER_HEIGHT) // 5) + 1
 # NUM_ROWS = INNER_WIDTH
 # NUM_COLS = INNER_HEIGHT
 
-THRASH_NODES = set()
-
-
-# class Environment:
-#     def __init__(self):
+THRASH_NODES = np.array([], dtype=object)
 
 
 class Nodes:
@@ -49,7 +49,8 @@ class Nodes:
         return f"Node at ({self.x}, {self.y}) - Row: {self.row}, Col: {self.col}"
 
 
-def ret_distance(p1: tuple, p2: tuple) -> int:  # http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
+@jit(nopython=True)
+def ret_distance_A_star_Dijkstra(p1: tuple, p2: tuple) -> int:  # http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
     dx, dy = abs(p1[0] - p2[0]), abs(p1[1] - p2[1])
     D, D2 = 5, 7  # cost 5 for horizontal and vertical, cost 7 for diagonal
     return D * (dx + dy) + (D2 - 2 * D) * min(dx, dy)  # Diagonal Distance
@@ -90,25 +91,21 @@ def is_node_inside_obstacle(node, obstacles_coords):
     for obstacles_coord in obstacles_coords:
         obstacle_x, obstacle_y, width, height = obstacles_coord
         if obstacle_x <= node_x < obstacle_x + width and obstacle_y <= node_y < obstacle_y + height:
-            THRASH_NODES.add(node)
+            np.append(THRASH_NODES, node)
             return True
     return False
-
 
 def create_grid(obstacles_coords, room_coords) -> list:
     grid = []
     nodes_id = 1
     nodes_outside_room = 1
-    to_remove = []
+
+    obstacles_coords_np = np.array(obstacles_coords)  # Konwersja na tablicę Numpy
 
     for row in range(1, NUM_ROWS - 1):
         for col in range(1, NUM_COLS - 1):
-            # x = col * 100
-            # y = row * 100
             x = col * 5
             y = row * 5
-            # x = col
-            # y = row
             if is_node_inside_room((x, y), room_coords):
                 node = Nodes(x, y, row, col, nodes_id)
                 nodes_id += 1
@@ -119,13 +116,9 @@ def create_grid(obstacles_coords, room_coords) -> list:
                 nodes_id += 1
                 nodes_outside_room += 1
                 grid.append(node)
-                to_remove.append(node)
                 # print(f"DELETED Node {node.node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
 
-    set_neighbours(grid, obstacles_coords)
-
-    for thrash_node in to_remove:
-        grid.remove(thrash_node)
+    set_neighbours(grid, obstacles_coords_np)  # Przekazanie przekształconej tablicy Numpy
 
     print(f"Grid set. {nodes_id - nodes_outside_room} nodes.")
     print("Neighbours set.")
@@ -169,7 +162,8 @@ def find_nodes_by_coordinates(grid, x, y):
     return None
 
 
-def a_star(start, goal):  # https://en.wikipedia.org/wiki/A*_search_algorithm
+
+def a_star_dijkstra(start, goal, algorithm_choice):  # https://en.wikipedia.org/wiki/A*_search_algorithm
     open_set = []
     close_set = []
 
@@ -196,11 +190,17 @@ def a_star(start, goal):  # https://en.wikipedia.org/wiki/A*_search_algorithm
             if neighbor in close_set:
                 continue
 
-            tentative_g_score = current_node.G + ret_distance((current_node.x, current_node.y),
-                                                              (neighbor.x, neighbor.y))
+            tentative_g_score = current_node.G + ret_distance_A_star_Dijkstra((current_node.x, current_node.y),
+                                                                              (neighbor.x, neighbor.y))
             neighbor.parent_ptr = current_node
             neighbor.G = tentative_g_score
-            neighbor.H = ret_distance((neighbor.x, neighbor.y), (goal.x, goal.y))
+
+            # if True, means A* and heuristic distance from current to finish,
+            # elif False means Dijkstra was picked and neighbor.H = 0
+            if algorithm_choice:
+                neighbor.H = ret_distance_A_star_Dijkstra((neighbor.x, neighbor.y), (goal.x, goal.y))
+
+            # So if False means neighbor.F = neighbor.G + 0 => neighbor.F = neighbor.G
             neighbor.F = neighbor.G + neighbor.H
 
             if neighbor not in open_set:
@@ -209,8 +209,7 @@ def a_star(start, goal):  # https://en.wikipedia.org/wiki/A*_search_algorithm
                 continue
     return None
 
-
-def ui_runner(start_pt, goal_pt, grid, obstacles, path):
+def ui_runner(start_pt, goal_pt, grid, obstacles, room_coords, path):
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
     running = True
@@ -250,11 +249,13 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, path):
     pygame.quit()
 
 
-if __name__ == "__main__":
+def driver(algorithm_choice):
+    start_time = time.time()
+    print("Start")
     # start_point = (300, 200)
     # goal_point = (300, 500)
     start_point = (100, 100)
-    goal_point = (400, 400)
+    goal_point = (400, 100)
     # start_point = (100, 10)
     # goal_point = (500, 10)
 
@@ -264,33 +265,32 @@ if __name__ == "__main__":
     # obstacles_coords = [[0, 100, 400, 50], [0, 400, 200, 100], [50, 220, 600, 50]]
     # obstacles_coords = [[250, 300, 340, 50]]
     # obstacles_coords = [[1, 30, 550, 50], [50, 120, 549, 50], [1, 200, 100, 50]]
-    obstacles_coords = []
+    # obstacles_coords = []
+    obstacles_coords = [[250, 30, 50, 150]]
     obstacles = get_obstacles(obstacles_coords)
 
     if not is_obstacle_inside_room(room_coords, obstacles_coords):
-        # raise RuntimeError("")
         raise Exception("Obstacles outside of room!")
 
-    start_time = time.time()
+    # start_time = time.time()
     grid = create_grid(obstacles_coords, room_coords)
-
-    end_time = time.time()
-    print("Single process ", end_time - start_time)
-
 
     # for node in grid:
     #     print(f"Node {node.node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
 
-    # sorted_thrash_set = sorted(THRASH_NODES, key=lambda node: (node.x, node.y))
-    # for item in sorted_thrash_set:
-    #     print("Thrash node: {}".format(item))
+    # end_time = time.time()
+    # print("Single process ", end_time - start_time)
 
     start_node = find_nodes_by_coordinates(grid=grid, x=start_point[0], y=start_point[1])
     goal_node = find_nodes_by_coordinates(grid=grid, x=goal_point[0], y=goal_point[1])
 
+    sorted_thrash_set = sorted(THRASH_NODES, key=lambda node: (node.x, node.y))
+    for item in sorted_thrash_set:
+        print("Thrash node: {}".format(item))
+
     if start_node and goal_node:
         print("Starting A*")
-        ret_path = a_star(start_node, goal_node)
+        ret_path = a_star_dijkstra(start_node, goal_node, algorithm_choice=algorithm_choice)
     else:
         raise Exception("Nodes don't found!")
 
@@ -301,4 +301,17 @@ if __name__ == "__main__":
         print("Path not found!")
         print(ret_path)
 
-    ui_runner(start_point, goal_point, grid, obstacles, ret_path)
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Czas wykonania algorytmu: {execution_time} sekundy")
+    ui_runner(start_point, goal_point, grid, obstacles, room_coords, ret_path)
+
+
+if __name__ == "__main__":
+    start_time = time.time()
+    print("Start")
+    algorithm_choice = True  # True - A*, False - Dijkstra
+    driver(algorithm_choice)
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Czas wykonania: {execution_time} sekundy")

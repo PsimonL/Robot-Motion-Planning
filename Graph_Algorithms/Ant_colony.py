@@ -161,11 +161,11 @@ def find_nodes_by_coordinates(grid, x, y):
 
 
 def ant_colony(start_node, goal_node, grid):
-    number_of_ants = 10
+    number_of_ants = 20
     number_of_iterations = 100
     decay_rate = 0.1
-    alpha = 1
-    beta = 1
+    alpha = 2
+    beta = 2
 
     pheromone_levels = initialize_pheromones(grid)
 
@@ -287,11 +287,12 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, room_coords, path):
 def driver():
     start_time = time.time()
     start_point = (100, 100)
-    goal_point = (400, 400)
+    goal_point = (400, 100)
 
     room_coords = [(0, 0), (600, 0), (600, 600), (0, 600)]
 
-    obstacles_coords = []
+    # obstacles_coords = []
+    obstacles_coords = [[250, 30, 50, 150]]
     obstacles = get_obstacles(obstacles_coords)
     if not is_obstacle_inside_room(room_coords, obstacles_coords):
         raise Exception("Obstacles outside of room!")
@@ -314,6 +315,7 @@ def driver():
     if ret_path:
         print("Path found.")
         print(ret_path)
+        print("Path length = ", len(ret_path))
     else:
         print("Path not found!")
         print(ret_path)
