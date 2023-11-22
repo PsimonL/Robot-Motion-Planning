@@ -11,7 +11,7 @@ from numba import cuda, jit
 
 class RobotSimulation:
     def __init__(self):
-        self.shouldVisualize = True
+        self.shouldVisualize = False
 
         self.size, self.inner_size = 650, 600
         self.SCREEN_WIDTH = self.size
@@ -178,11 +178,11 @@ class RobotSimulation:
             self.reward = 0
 
         # penalty/price for direction
-        # self.current_direction_to_aim()
-        # if self.flag_x == 2 or self.flag_y == 2:
-        #     self.reward += 3
-        # else:
-        #     self.reward += -3
+        self.current_direction_to_aim()
+        if self.flag_x == 2 or self.flag_y == 2:
+            self.reward += 1
+        else:
+            self.reward += -1
 
         # if robot getting closer
         distance_difference = self.previous_distance_to_finish - self.current_distance_to_finish

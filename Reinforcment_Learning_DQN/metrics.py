@@ -135,7 +135,7 @@ if __name__ == "__main__":
     # )
 
     episode_plots_for_various_metrics(
-        file_name="agent_output/10_000 episodes 89%/epsilon_values.txt",
+        file_name="agent_output/epsilon_values.txt",
         plot_title="Epsilon drop",
         ox_name="Episode",
         oy_name="Epsilon",
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     # )
 
     histogram_for_reached_aims(
-        file_name="agent_output/10_000 episodes/no_finished_games_file.txt",
+        file_name="agent_output/no_finished_games_file.txt",
         plot_title="Rozkład liczby zadań ukończonych co 100 epizodów",
         ox_name="Epizody",
         oy_name="Liczba zadań ukończonych",
