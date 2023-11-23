@@ -1,5 +1,5 @@
 # TODO: change list for numpy arrays
-# TODO: reafctor code for CUDA GPU
+# TODO: reafctor code for CUDA GPU 
 
 import pygame
 from shapely.geometry import Point
@@ -7,7 +7,6 @@ from shapely.geometry.polygon import Polygon
 from numba import cuda, jit
 import numpy as np
 import time
-import random
 import multiprocessing
 
 size = 650
@@ -40,15 +39,18 @@ class Nodes:
     def __init__(self, x, y, row, col, node_id):
         self.x, self.y = x, y  # row, col
         self.row, self.col = row, col  # multiple of 5, distance on diangonals will be 7 and horizontal as well as vertical would be 5
+        self.G, self.H = 0, 0  # G - distance from current node to start node , H - heuristic distance from current node to end node
+        self.F = self.G + self.H  # F (node in nodes) = G (node in nodes) + H (node in nodes)
         self.parent_ptr = 0
         self.node_id = node_id
+        self.neighbours_lst = []
 
     def __str__(self):
         return f"Node at ({self.x}, {self.y}) - Row: {self.row}, Col: {self.col}"
 
 
 @jit(nopython=True)
-def ret_distance(p1: tuple, p2: tuple) -> int:  # http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
+def ret_distance_A_star_Dijkstra(p1: tuple, p2: tuple) -> int:  # http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
     dx, dy = abs(p1[0] - p2[0]), abs(p1[1] - p2[1])
     D, D2 = 5, 7  # cost 5 for horizontal and vertical, cost 7 for diagonal
     return D * (dx + dy) + (D2 - 2 * D) * min(dx, dy)  # Diagonal Distance
@@ -93,7 +95,6 @@ def is_node_inside_obstacle(node, obstacles_coords):
             return True
     return False
 
-
 def create_grid(obstacles_coords, room_coords) -> list:
     grid = []
     nodes_id = 1
@@ -120,6 +121,7 @@ def create_grid(obstacles_coords, room_coords) -> list:
     set_neighbours(grid, obstacles_coords_np)  # Przekazanie przekształconej tablicy Numpy
 
     print(f"Grid set. {nodes_id - nodes_outside_room} nodes.")
+    print("Neighbours set.")
     return grid
 
 
@@ -160,89 +162,52 @@ def find_nodes_by_coordinates(grid, x, y):
     return None
 
 
-def ant_colony(start_node, goal_node, grid):
-    number_of_ants = 20
-    number_of_iterations = 100
-    decay_rate = 0.1
-    alpha = 2
-    beta = 2
 
-    pheromone_levels = initialize_pheromones(grid)
+def a_star_dijkstra(start, goal, algorithm_choice):  # https://en.wikipedia.org/wiki/A*_search_algorithm
+    open_set = []
+    close_set = []
 
-    best_path = None
-    best_path_length = float('inf')
+    open_set.append(start)
+    while len(open_set) > 0:
+        current_node = open_set[0]
+        for node in open_set:
+            if node.F < current_node.F or node.F == current_node.F and node.H < current_node.H:
+                current_node = node
 
-    for iteration in range(number_of_iterations):
-        print(f"ITERATION {iteration}")
-        paths = []
-        path_lengths = []
+        if current_node == goal:
+            path = []
+            while current_node is not None:
+                if isinstance(current_node, int):
+                    break
+                path.append((current_node.x, current_node.y))
+                current_node = current_node.parent_ptr
+            return path[::-1]
 
-        for ant in range(number_of_ants):
-            print(f"Ant {ant}")
-            path, path_length = build_path(start_node, goal_node, grid, pheromone_levels, alpha, beta)
-            paths.append(path)
-            path_lengths.append(path_length)
+        close_set.append(current_node)
+        open_set.remove(current_node)
 
-            if path_length < best_path_length:
-                best_path = path
-                best_path_length = path_length
+        for neighbor in current_node.neighbours_lst:
+            if neighbor in close_set:
+                continue
 
-        update_pheromones(pheromone_levels, paths, path_lengths, decay_rate)
+            tentative_g_score = current_node.G + ret_distance_A_star_Dijkstra((current_node.x, current_node.y),
+                                                                              (neighbor.x, neighbor.y))
+            neighbor.parent_ptr = current_node
+            neighbor.G = tentative_g_score
 
-    bp = [(node.x, node.y) for node in best_path]
+            # if True, means A* and heuristic distance from current to finish,
+            # elif False means Dijkstra was picked and neighbor.H = 0
+            if algorithm_choice:
+                neighbor.H = ret_distance_A_star_Dijkstra((neighbor.x, neighbor.y), (goal.x, goal.y))
 
-    return bp
+            # So if False means neighbor.F = neighbor.G + 0 => neighbor.F = neighbor.G
+            neighbor.F = neighbor.G + neighbor.H
 
-
-def initialize_pheromones(grid):
-    pheromone_levels = {}
-    for node in grid:
-        if node.row != -1 and node.col != -1:
-            for neighbor in node.neighbours_lst:
-                pheromone_levels[(node, neighbor)] = 1.0  # Przykładowa inicjalizacja
-    return pheromone_levels
-
-
-def build_path(start_node, goal_node, grid, pheromone_levels, alpha, beta):
-    current_node = start_node
-    path = [current_node]
-    path_length = 0
-
-    while current_node != goal_node:
-        next_node = choose_next_node(current_node, pheromone_levels, alpha, beta)
-        path.append(next_node)
-        path_length += ret_distance((current_node.x, current_node.y), (next_node.x, next_node.y))
-        current_node = next_node
-
-    return path, path_length
-
-
-def choose_next_node(current_node, pheromone_levels, alpha, beta):
-    probabilities = []
-    total = 0
-
-    for neighbor in current_node.neighbours_lst:
-        pheromone = pheromone_levels[(current_node, neighbor)] ** alpha
-        heuristic = (1 / ret_distance((current_node.x, current_node.y), (neighbor.x, neighbor.y))) ** beta
-        probability = pheromone * heuristic
-        probabilities.append((probability, neighbor))
-        total += probability
-
-    probabilities = [(prob / total, node) for prob, node in probabilities]
-    next_node = random.choices([node for _, node in probabilities], weights=[prob for prob, _ in probabilities], k=1)[0]
-
-    return next_node
-
-
-def update_pheromones(pheromone_levels, paths, path_lengths, decay_rate):
-    for path, path_length in zip(paths, path_lengths):
-        for i in range(len(path) - 1):
-            node, next_node = path[i], path[i + 1]
-            pheromone_levels[(node, next_node)] += 1.0 / path_length
-
-    for edge in pheromone_levels:
-        pheromone_levels[edge] *= (1 - decay_rate)
-
+            if neighbor not in open_set:
+                open_set.append(neighbor)
+            elif tentative_g_score >= neighbor.G:
+                continue
+    return None
 
 def ui_runner(start_pt, goal_pt, grid, obstacles, room_coords, path):
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -284,20 +249,37 @@ def ui_runner(start_pt, goal_pt, grid, obstacles, room_coords, path):
     pygame.quit()
 
 
-def driver():
+def driver(algorithm_choice):
     start_time = time.time()
-    start_point = (100, 100)
-    goal_point = (400, 100)
+    print("Start")
+    # start_point = (300, 200)
+    # goal_point = (300, 500)
+    start_point = (50, 50)
+    goal_point = (550, 550)
+    # start_point = (100, 10)
+    # goal_point = (500, 10)
 
     room_coords = [(0, 0), (600, 0), (600, 600), (0, 600)]
+    # room_coords = [(0, 0), (350, 0), (350, 150), (600, 150), (600, 600), (0, 600)]
 
+    # obstacles_coords = [[0, 100, 400, 50], [0, 400, 200, 100], [50, 220, 600, 50]]
+    # obstacles_coords = [[250, 300, 340, 50]]
+    # obstacles_coords = [[1, 30, 550, 50], [50, 120, 549, 50], [1, 200, 100, 50]]
     # obstacles_coords = []
-    obstacles_coords = [[250, 30, 50, 150]]
+    obstacles_coords = [[100, 1, 50, 350], [200, 100, 50, 499], [350, 1, 50, 500]]
     obstacles = get_obstacles(obstacles_coords)
+
     if not is_obstacle_inside_room(room_coords, obstacles_coords):
         raise Exception("Obstacles outside of room!")
 
+    # start_time = time.time()
     grid = create_grid(obstacles_coords, room_coords)
+
+    # for node in grid:
+    #     print(f"Node {node.node_id} at ({node.x}, {node.y}) - Row: {node.row}, Col: {node.col}")
+
+    # end_time = time.time()
+    # print("Single process ", end_time - start_time)
 
     start_node = find_nodes_by_coordinates(grid=grid, x=start_point[0], y=start_point[1])
     goal_node = find_nodes_by_coordinates(grid=grid, x=goal_point[0], y=goal_point[1])
@@ -307,15 +289,14 @@ def driver():
         print("Thrash node: {}".format(item))
 
     if start_node and goal_node:
-        print("Starting ACO")
-        ret_path = ant_colony(start_node=start_node, goal_node=goal_node, grid=grid)
+        print("Starting A*")
+        ret_path = a_star_dijkstra(start_node, goal_node, algorithm_choice=algorithm_choice)
     else:
         raise Exception("Nodes don't found!")
 
     if ret_path:
         print("Path found.")
         print(ret_path)
-        print("Path length = ", len(ret_path))
     else:
         print("Path not found!")
         print(ret_path)
@@ -329,7 +310,8 @@ def driver():
 if __name__ == "__main__":
     start_time = time.time()
     print("Start")
-    driver()
+    algorithm_choice = True  # True - A*, False - Dijkstra
+    driver(algorithm_choice)
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"Czas wykonania: {execution_time} sekundy")
