@@ -72,7 +72,7 @@ class RobotSimulation:
         self.room = Polygon(self.room_coords)
 
         self.obstacles = [
-            # shapes.Obstacle(200, 100, 100, 50),
+            shapes.Obstacle(200, 100, 100, 50),
             # shapes.Obstacle(400, 300, 50, 100)
         ]
 
@@ -102,12 +102,12 @@ class RobotSimulation:
         return np.array([
             self.robot.x, self.robot.y,
             self.current_distance_to_finish,
-            self.flag_x, self.flag_y],
+            self.flag_x, self.flag_y,
             self.look_forward_flags[0], self.look_forward_flags[1],
             self.look_forward_flags[2], self.look_forward_flags[3],
             self.look_forward_flags[4], self.look_forward_flags[5],
             self.look_forward_flags[6], self.look_forward_flags[7]
-        )
+        ])
 
     def update_look_forward_flags(self):
         self.look_forward_flags = [0] * 8  # Zerowanie flag przed aktualizacją
