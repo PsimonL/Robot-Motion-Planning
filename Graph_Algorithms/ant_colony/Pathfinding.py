@@ -2,7 +2,7 @@ from PheromoneUtils import initialize_pheromones, build_path, update_pheromones
 
 
 def ant_colony(start_node, goal_node, grid):
-    number_of_ants = 20
+    number_of_ants = 10
     number_of_iterations = 100
     decay_rate = 0.1
     alpha = 2
