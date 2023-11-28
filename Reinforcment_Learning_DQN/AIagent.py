@@ -7,12 +7,21 @@ import numpy as np
 from collections import deque
 from datetime import datetime
 import time
+import subprocess
 
 import environment
 
 
-def configure_pytorch(use_gpu):  # Tensorflow sets GPU automatically (even without Keras), Pytorch doesn't.
-    if use_gpu and torch.cuda.is_available():
+def configure_pytorch():  # Tensorflow sets GPU automatically (even without Keras), Pytorch doesn't.
+    print("PyTorch version:", torch.__version__)
+    print("Is PyTorch CUDA accessible:", torch.cuda.is_available())
+    if torch.cuda.is_available():
+        try:
+            result = subprocess.run(['nvcc', '--version'], capture_output=True, text=True, check=True)
+            nvcc_version = result.stdout.strip()
+        except subprocess.CalledProcessError as e:
+            nvcc_version = f"Error: {e}"
+        print(nvcc_version)
         print("GPU dostępne i skonfigurowane.")
     else:
         print("Nie znaleziono urządzenia GPU. Uczenie będzie odbywać się na CPU.")
@@ -35,10 +44,10 @@ class QNetwork(nn.Module):  # Predict future reward using regression for DQN age
 
 class DQNagent:
     def __init__(self):
-        self.state_size = 5
+        self.state_size = 13
         self.action_size = 8   # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 100
-        self.no_episodes = 30
+        self.no_episodes = 10_000
         self.max_memory = 50_000
         self.trial_points_memory = []
         self.output_dir = "agent_output/"
@@ -218,7 +227,7 @@ def driver():
 if __name__ == "__main__":  # lookforward
     start_time = time.time()
     print("Start")
-    configure_pytorch(use_gpu=False)
+    configure_pytorch()
     driver()
     end_time = time.time()
     execution_time = end_time - start_time

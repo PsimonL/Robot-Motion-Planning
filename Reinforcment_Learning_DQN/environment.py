@@ -36,6 +36,7 @@ class RobotSimulation:
         self.flag_x, self.flag_y = None, None
 
         self.room = None
+        self.look_forward_flags = [0] * 8
 
         self.previous_distance_to_finish = 6
         self.current_distance_to_finish = 6
@@ -98,7 +99,47 @@ class RobotSimulation:
 
     def get_states(self) -> np.array:
         # print(f"GET_STATES() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
-        return np.array([self.robot.x, self.robot.y, self.current_distance_to_finish, self.flag_x, self.flag_y])
+        return np.array([
+            self.robot.x, self.robot.y,
+            self.current_distance_to_finish,
+            self.flag_x, self.flag_y],
+            self.look_forward_flags[0], self.look_forward_flags[1],
+            self.look_forward_flags[2], self.look_forward_flags[3],
+            self.look_forward_flags[4], self.look_forward_flags[5],
+            self.look_forward_flags[6], self.look_forward_flags[7]
+        )
+
+    def update_look_forward_flags(self):
+        self.look_forward_flags = [0] * 8  # Zerowanie flag przed aktualizacją
+
+        dd = 5
+
+        left_flag_position = (self.robot.x - dd, self.robot.y + self.robot.height / 2)
+        right_flag_position = (self.robot.x + self.robot.width + dd, self.robot.y + self.robot.height / 2)
+        up_flag_position = (self.robot.x + self.robot.width / 2, self.robot.y - dd)
+        down_flag_position = (self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height + dd)
+        up_left_flag_position = (self.robot.x - dd, self.robot.y - dd)
+        up_right_flag_position = (self.robot.x + self.robot.width + dd, self.robot.y - dd)
+        down_left_flag_position = (self.robot.x - dd, self.robot.y + self.robot.height + dd)
+        down_right_flag_position = (self.robot.x + self.robot.width + dd, self.robot.y + self.robot.height + dd)
+
+        for i, obstacle in enumerate(self.obstacles):
+            if obstacle.rect.collidepoint(left_flag_position):
+                self.look_forward_flags[0] = 1  # Lewo
+            if obstacle.rect.collidepoint(right_flag_position):
+                self.look_forward_flags[1] = 1  # Prawo
+            if obstacle.rect.collidepoint(up_flag_position):
+                self.look_forward_flags[2] = 1  # Góra
+            if obstacle.rect.collidepoint(down_flag_position):
+                self.look_forward_flags[3] = 1  # Dół
+            if obstacle.rect.collidepoint(up_left_flag_position):
+                self.look_forward_flags[4] = 1  # Góra-Lewo
+            if obstacle.rect.collidepoint(up_right_flag_position):
+                self.look_forward_flags[5] = 1  # Góra-Prawo
+            if obstacle.rect.collidepoint(down_left_flag_position):
+                self.look_forward_flags[6] = 1  # Dół-Lewo
+            if obstacle.rect.collidepoint(down_right_flag_position):
+                self.look_forward_flags[7] = 1  # Dół-Prawo
 
     def move_robot(self, action):
         dx, dy = 0, 0
@@ -156,6 +197,7 @@ class RobotSimulation:
 
     def do_step(self, action: int) -> Tuple[int, bool, bool, list]:
         self.step_iterator += 1
+        self.update_look_forward_flags()
         if self.shouldVisualize:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -178,11 +220,11 @@ class RobotSimulation:
             self.reward = 0
 
         # penalty/price for direction
-        self.current_direction_to_aim()
-        if self.flag_x == 2 or self.flag_y == 2:
-            self.reward += 1
-        else:
-            self.reward += -1
+        # self.current_direction_to_aim()
+        # if self.flag_x == 2 or self.flag_y == 2:
+        #     self.reward += 1
+        # else:
+        #     self.reward += -1
 
         # if robot getting closer
         distance_difference = self.previous_distance_to_finish - self.current_distance_to_finish
