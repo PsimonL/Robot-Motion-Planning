@@ -9,9 +9,11 @@ from shapely.geometry.polygon import Polygon
 from numba import cuda, jit
 
 
+
+
 class RobotSimulation:
     def __init__(self):
-        self.shouldVisualize = False
+        self.shouldVisualize = True
 
         self.size, self.inner_size = 650, 600
         self.SCREEN_WIDTH = self.size
@@ -72,12 +74,9 @@ class RobotSimulation:
         self.room = Polygon(self.room_coords)
 
         self.obstacles = [
-            shapes.Obstacle(200, 100, 100, 50),
+            shapes.Obstacle(300, 150, 10, 400),
             # shapes.Obstacle(400, 300, 50, 100)
         ]
-
-    def obstacles_placement(self):  # TODO: add states that gives info about obstacles
-        pass
 
     def current_distance_to_aim(self):
         self.current_distance_to_finish = math.dist([self.robot.x, self.robot.y], [self.finish_x, self.finish_y])
@@ -109,37 +108,99 @@ class RobotSimulation:
             self.look_forward_flags[6], self.look_forward_flags[7]
         ])
 
+    def will_collision_occur(self, direction):
+        # Oblicz nowe położenie robota na podstawie kierunku ruchu
+        future_x = self.robot.x
+        future_y = self.robot.y
+
+        if direction == 'left':
+            future_x -= 5  # Przyjmuję, że robot przesuwa się o 5 jednostek w każdym ruchu
+        elif direction == 'right':
+            future_x += 5
+        elif direction == 'up':
+            future_y -= 5
+        elif direction == 'down':
+            future_y += 5
+        elif direction == 'up_left':
+            future_x -= 5
+            future_y -= 5
+        elif direction == 'up_right':
+            future_x += 5
+            future_y -= 5
+        elif direction == 'down_left':
+            future_x -= 5
+            future_y += 5
+        elif direction == 'down_right':
+            future_x += 5
+            future_y += 5
+
+        # Czy nowe położenie koliduje z przeszkodami
+        robot_rect = pygame.Rect(future_x, future_y, self.robot.width, self.robot.height)
+        for obstacle in self.obstacles:
+            if obstacle.rect.colliderect(robot_rect):
+                return True  # Zderzenie występuje
+
+        return False  # Brak zderzenia
+
     def update_look_forward_flags(self):
         self.look_forward_flags = [0] * 8  # Zerowanie flag przed aktualizacją
 
-        dd = 5
-
-        left_flag_position = (self.robot.x - dd, self.robot.y + self.robot.height / 2)
-        right_flag_position = (self.robot.x + self.robot.width + dd, self.robot.y + self.robot.height / 2)
-        up_flag_position = (self.robot.x + self.robot.width / 2, self.robot.y - dd)
-        down_flag_position = (self.robot.x + self.robot.width / 2, self.robot.y + self.robot.height + dd)
-        up_left_flag_position = (self.robot.x - dd, self.robot.y - dd)
-        up_right_flag_position = (self.robot.x + self.robot.width + dd, self.robot.y - dd)
-        down_left_flag_position = (self.robot.x - dd, self.robot.y + self.robot.height + dd)
-        down_right_flag_position = (self.robot.x + self.robot.width + dd, self.robot.y + self.robot.height + dd)
-
-        for i, obstacle in enumerate(self.obstacles):
-            if obstacle.rect.collidepoint(left_flag_position):
-                self.look_forward_flags[0] = 1  # Lewo
-            if obstacle.rect.collidepoint(right_flag_position):
-                self.look_forward_flags[1] = 1  # Prawo
-            if obstacle.rect.collidepoint(up_flag_position):
-                self.look_forward_flags[2] = 1  # Góra
-            if obstacle.rect.collidepoint(down_flag_position):
-                self.look_forward_flags[3] = 1  # Dół
-            if obstacle.rect.collidepoint(up_left_flag_position):
-                self.look_forward_flags[4] = 1  # Góra-Lewo
-            if obstacle.rect.collidepoint(up_right_flag_position):
-                self.look_forward_flags[5] = 1  # Góra-Prawo
-            if obstacle.rect.collidepoint(down_left_flag_position):
-                self.look_forward_flags[6] = 1  # Dół-Lewo
-            if obstacle.rect.collidepoint(down_right_flag_position):
-                self.look_forward_flags[7] = 1  # Dół-Prawo
+        left_LF = self.will_collision_occur('left')
+        if left_LF:
+            self.look_forward_flags[0] = 1  # Lewo
+            self.reward -= 10
+        # if not left_LF:
+        #     self.look_forward_flags[0] = 0  # Lewo
+        #     self.reward += 1
+        right_LF = self.will_collision_occur('right')
+        if right_LF:
+            self.look_forward_flags[1] = 1  # Prawo
+            self.reward -= 10
+        # if not right_LF:
+        #     self.look_forward_flags[1] = 0  # Prawo
+        #     self.reward += 1
+        up_LF = self.will_collision_occur('up')
+        if up_LF:
+            self.look_forward_flags[2] = 1  # Góra
+            self.reward -= 10
+        # if not up_LF:
+        #     self.look_forward_flags[2] = 0  # Góra
+        #     self.reward += 1
+        down_LF = self.will_collision_occur('down')
+        if down_LF:
+            self.look_forward_flags[3] = 1  # Dół
+            self.reward -= 10
+        # if not down_LF:
+        #     self.look_forward_flags[3] = 0  # Dół
+        #     self.reward += 1
+        up_left_LF = self.will_collision_occur('up_left')
+        if up_left_LF:
+            self.look_forward_flags[4] = 1  # Góra-Lewo
+            self.reward -= 10
+        # if not up_left_LF:
+        #     self.look_forward_flags[4] = 0  # Góra-Lewo
+        #     self.reward += 1
+        up_right_LF = self.will_collision_occur('up_right')
+        if up_right_LF:
+            self.look_forward_flags[5] = 1  # Góra-Prawo
+            self.reward -= 10
+        # if not up_right_LF:
+        #     self.look_forward_flags[5] = 0  # Góra-Prawo
+        #     self.reward += 1
+        down_left_LF = self.will_collision_occur('down_left')
+        if down_left_LF:
+            self.look_forward_flags[6] = 1  # Dół-Lewo
+            self.reward -= 10
+        # if not down_left_LF:
+        #     self.look_forward_flags[6] = 0  # Dół-Lewo
+        #     self.reward += 1
+        down_right_LF = self.will_collision_occur('down_right')
+        if down_right_LF:
+            self.look_forward_flags[7] = 1  # Dół-Prawo
+            self.reward -= 10
+        # if not down_right_LF:
+        #     self.look_forward_flags[7] = 0  # Dół-Prawo
+        #     self.reward += 1
 
     def move_robot(self, action):
         dx, dy = 0, 0
@@ -212,12 +273,10 @@ class RobotSimulation:
         # end if finish
         self.current_distance_to_aim()
         if self.current_distance_to_finish <= 5:
-            self.reward = 100
+            self.reward = 1000
             reset_flag = True
             game_finished = True
             return self.reward, reset_flag, game_finished, self.trail_points
-        else:
-            self.reward = 0
 
         # penalty/price for direction
         # self.current_direction_to_aim()
@@ -229,33 +288,30 @@ class RobotSimulation:
         # if robot getting closer
         distance_difference = self.previous_distance_to_finish - self.current_distance_to_finish
         if distance_difference < 0:
-            self.reward += -7.5
+            self.reward -= 10
         elif distance_difference > 0:
-            self.reward += 7.5
-        else:
-            self.reward += 0
+            self.reward += 5
         self.previous_distance_to_finish = self.current_distance_to_finish
 
         # obstacle collision penalty
         for obstacle in self.obstacles:
             if geometry.check_collision(self.robot, obstacle.rect):
-                self.reward += -7.5
+                print("COLLISION!")
+                self.reward -= 100
                 reset_flag = True
                 return self.reward, reset_flag, game_finished, self.trail_points
 
         # room wall penalty
         current_coords = Point(self.robot.x, self.robot.y)
         is_inside_room = self.room.contains(current_coords)
-        if is_inside_room:
-            self.reward += 2
-        else:
-            self.reward -= 10
+        if not is_inside_room:
+            self.reward -= 30
             reset_flag = True
             return self.reward, reset_flag, game_finished, self.trail_points
 
         # too long time penalty
         if self.step_iterator > self.time_penalty_margin:
-            self.reward += -100
+            self.reward -= 100
             reset_flag = True
             return self.reward, reset_flag, game_finished, self.trail_points
 

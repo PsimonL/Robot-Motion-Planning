@@ -171,7 +171,6 @@ def driver():
             print("action = ", action)
             # perform action
             reward, done, episode_finished, trial_points = env.do_step(action)
-            agent.trial_points_memory.append(trial_points)
 
             agent.steps_per_episode += 1
 
@@ -190,6 +189,7 @@ def driver():
             agent.train_short_memory(old_state, action, reward, new_state, done)
 
             if done:
+                agent.trial_points_memory.append(trial_points)
                 # use long memory to train
                 agent.train_long_memory()
                 steps_per_episode_file.write(
