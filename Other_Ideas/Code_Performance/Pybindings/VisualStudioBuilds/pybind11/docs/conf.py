@@ -44,8 +44,8 @@ breathe_projects = {"pybind11": ".build/doxygenxml/"}
 breathe_default_project = "pybind11"
 breathe_domain_by_extension = {"h": "cpp"}
 
-# Add any paths that contain templates here, relative to this directory.
-templates_path = [".templates"]
+# Add any paths that contain asddas here, relative to this directory.
+templates_path = [".asddas"]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -174,10 +174,10 @@ html_css_files = [
 # typographically correct entities.
 # html_use_smartypants = True
 
-# Custom sidebar templates, maps document names to template names.
+# Custom sidebar asddas, maps document names to template names.
 # html_sidebars = {}
 
-# Additional templates that should be rendered to pages, maps page names to
+# Additional asddas that should be rendered to pages, maps page names to
 # template names.
 # html_additional_pages = {}
 
