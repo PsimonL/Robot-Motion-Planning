@@ -1,9 +1,10 @@
 import time
+import networkx as nx
 
 from Graph_Algorithms.ConstVars import THRASH_NODES
 from Graph_Algorithms.GeometryUtils import get_obstacles, is_obstacle_inside_room
 from GridUtils import create_grid, find_nodes_by_coordinates
-from Pathfinding import a_star_dijkstra
+from Pathfinding import a_star, dijkstra
 from UiUtils import ui_runner
 
 def main(algorithm_choice):
@@ -19,12 +20,12 @@ def main(algorithm_choice):
     room_coords = [(0, 0), (600, 0), (600, 600), (0, 600)]
     # room_coords = [(0, 0), (350, 0), (350, 150), (600, 150), (600, 600), (0, 600)]
 
-    # obstacles_coords = [[0, 100, 400, 50], [0, 400, 200, 100], [50, 220, 600, 50]]
     # obstacles_coords = [[250, 300, 340, 50]]
     # obstacles_coords = [[1, 30, 550, 50], [50, 120, 549, 50], [1, 200, 100, 50]]
     # obstacles_coords = []
     obstacles_coords = [[100, 1, 50, 350], [200, 100, 50, 499], [350, 1, 50, 500]]
     obstacles = get_obstacles(obstacles_coords)
+    print("obstacles  =  ", obstacles)
 
     if not is_obstacle_inside_room(room_coords, obstacles_coords):
         raise Exception("Obstacles outside of room!")
@@ -46,8 +47,11 @@ def main(algorithm_choice):
         print("Thrash node: {}".format(item))
 
     if start_node and goal_node:
-        print("Starting A*")
-        ret_path = a_star_dijkstra(start_node, goal_node, algorithm_choice=algorithm_choice)
+        # G = nx.Graph()
+        # ret_path = a_star(start_node, goal_node, algorithm_choice=algorithm_choice)
+        ret_path = a_star(start_node, goal_node)
+        # ret_path = dijkstra(start_node, goal_node)
+
     else:
         raise Exception("Nodes don't found!")
 

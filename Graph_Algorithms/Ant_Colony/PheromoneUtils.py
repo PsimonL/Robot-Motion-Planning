@@ -1,6 +1,6 @@
 import random
 
-from Graph_Algorithms.DiagonalDistanceUtils import diagonal_distance
+from Graph_Algorithms.DistanceUtils import diagonal_distance
 
 
 def initialize_pheromones(grid):
@@ -8,7 +8,7 @@ def initialize_pheromones(grid):
     for node in grid:
         if node.row != -1 and node.col != -1:
             for neighbor in node.neighbours_lst:
-                pheromone_levels[(node, neighbor)] = 1.0  # Przykładowa inicjalizacja
+                pheromone_levels[(node, neighbor)] = 1.0
     return pheromone_levels
 
 

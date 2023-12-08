@@ -41,5 +41,5 @@ def rrt_main(flag):
 
 
 if __name__ == "__main__":
-    flag = "RRT"
+    flag = "RRT*"
     rrt_main(flag)

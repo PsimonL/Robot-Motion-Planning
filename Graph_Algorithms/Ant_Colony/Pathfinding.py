@@ -5,8 +5,8 @@ def ant_colony(start_node, goal_node, grid):
     number_of_ants = 10
     number_of_iterations = 100
     decay_rate = 0.1
-    alpha = 2
-    beta = 2
+    alpha = 1
+    beta = 5
 
     pheromone_levels = initialize_pheromones(grid)
 

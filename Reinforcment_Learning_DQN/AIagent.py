@@ -131,7 +131,7 @@ class DQNagent:
         torch.save(self.q_network.state_dict(), f"{name}")
 
 
-def driver():
+def agent_driver():
     # initialize agent and env
     agent = DQNagent()
     agent.load(name=None, should_load=False, agent=agent)
@@ -164,12 +164,12 @@ def driver():
 
         # Episode lasts until done returns True flag and penalty is given or if aim is reached
         while True:
-            # get current step
+            # Get current step
             old_state = env.get_states()
-            # choose action
+            # Choose action
             action = agent.get_action(old_state)
             print("action = ", action)
-            # perform action
+            # Perform action
             reward, done, episode_finished, trial_points = env.do_step(action)
 
             agent.steps_per_episode += 1
@@ -178,27 +178,27 @@ def driver():
                 no_finished_games_file.write(f"episode - {episode}/{agent.no_episodes}, STATUS: AIM REACHED\n")
 
             agent.reward_per_episode += reward
-            # get new state after action
+            # Get new state after action
             new_state = env.get_states()
-            # reshape to fit TensorFlow model input
+            # Reshape to fit TensorFlow model input
             new_state = np.reshape(new_state, [1, agent.state_size])
             old_state = np.reshape(old_state, [1, agent.state_size])
-            # remember feedback to train deep neural network
+            # Remember feedback to train deep neural network
             agent.remember(old_state, action, reward, new_state, done)
-            # use short memory to train
+            # Use short memory to train
             agent.train_short_memory(old_state, action, reward, new_state, done)
 
             if done:
                 agent.trial_points_memory.append(trial_points)
-                # use long memory to train
+                # Use long memory to train
                 agent.train_long_memory()
                 steps_per_episode_file.write(
                     f"episode - {episode}/{agent.no_episodes}, "f"steps_per_episode = {agent.steps_per_episode}\n")
                 loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss}\n")
                 epsilon_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"epsilon = {agent.epsilon}\n")
-                # reset env
+                # Reset env
                 env.reset_env()
-                # break and take another episode
+                # Break and take another episode
                 break
 
             if agent.no_episodes % 50 == 0:
@@ -228,7 +228,7 @@ if __name__ == "__main__":  # lookforward
     start_time = time.time()
     print("Start")
     configure_pytorch()
-    driver()
+    agent_driver()
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"Czas wykonania: {execution_time} sekundy")  # Czas wykonania 100 epizodów: 12.388508558273315 sekundy

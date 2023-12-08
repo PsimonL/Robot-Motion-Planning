@@ -22,7 +22,8 @@ def new_point(start, end, max_distance):
 def rrt_star_algorithm(start, goal, obstacles_coords):
     tree = [start]
 
-    for _ in range(MAX_ITERATIONS):
+    for i in range(MAX_ITERATIONS):
+        print(i)
         random_point = get_random_point()
         nearest = nearest_node(tree, random_point)
         new_node, cost = new_point(nearest, random_point, EXPANSION_DISTANCE)
