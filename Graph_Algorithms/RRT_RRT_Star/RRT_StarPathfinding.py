@@ -19,10 +19,10 @@ def new_point(start, end, max_distance):
         return new_node, new_node.cost
 
 
-def rrt_star_algorithm(start, goal, obstacles_coords):
+def rrt_star_algorithm(start, goal, obstacles_coords, max_iterations=MAX_ITERATIONS):
     tree = [start]
 
-    for i in range(MAX_ITERATIONS):
+    for i in range(max_iterations):
         print(i)
         random_point = get_random_point()
         nearest = nearest_node(tree, random_point)
@@ -33,19 +33,23 @@ def rrt_star_algorithm(start, goal, obstacles_coords):
             new_node.cost = cost
 
             for node in tree:
-                if euclidean_distance(new_node, node) < EXPANSION_DISTANCE and new_node.cost + euclidean_distance(new_node,
-                                                                                                                  node) < node.cost:
+                if euclidean_distance(new_node, node) < EXPANSION_DISTANCE and new_node.cost + euclidean_distance(
+                        new_node,
+                        node) < node.cost:
                     node.parent = new_node
                     node.cost = new_node.cost + euclidean_distance(new_node, node)
 
             tree.append(new_node)
 
-            if euclidean_distance(new_node, goal) < EXPANSION_DISTANCE:
-                path = [goal]
-                current = new_node
-                while current.parent:
-                    path.append(current.parent)
-                    current = current.parent
-                return path[::-1], tree
+    # Po zakończeniu iteracji, szukamy ścieżki do celu
+    path = []
+    for node in tree:
+        if euclidean_distance(node, goal) < EXPANSION_DISTANCE:
+            path = [goal]
+            current = node
+            while current.parent:
+                path.append(current.parent)
+                current = current.parent
+            return path[::-1], tree
 
     return None, tree

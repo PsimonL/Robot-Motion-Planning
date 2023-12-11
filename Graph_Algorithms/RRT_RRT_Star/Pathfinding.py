@@ -4,8 +4,11 @@ from Graph_Algorithms.ConstVars import INNER_WIDTH, INNER_HEIGHT
 from RRTNodes import RRTNode
 from EuclideanDistanceUtils import euclidean_distance
 
+
 def get_random_point():
     return RRTNode(random.uniform(0, INNER_WIDTH), random.uniform(0, INNER_HEIGHT))
+
+
 def nearest_node(tree, point):
     min_dist = float('inf')
     nearest = None

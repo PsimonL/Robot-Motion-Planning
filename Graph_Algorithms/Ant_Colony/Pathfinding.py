@@ -1,26 +1,26 @@
 from PheromoneUtils import initialize_pheromones, build_path, update_pheromones
 
+NUMBER_OF_ANTS = 20
+NUMBER_OF_ITERATIONS = 200
+DECAY_RATE = 0.1
+ALPHA = 1
+BETA = 5
+
 
 def ant_colony(start_node, goal_node, grid):
-    number_of_ants = 10
-    number_of_iterations = 100
-    decay_rate = 0.1
-    alpha = 1
-    beta = 5
-
     pheromone_levels = initialize_pheromones(grid)
 
     best_path = None
     best_path_length = float('inf')
 
-    for iteration in range(number_of_iterations):
+    for iteration in range(NUMBER_OF_ITERATIONS):
         print(f"ITERATION {iteration}")
         paths = []
         path_lengths = []
 
-        for ant in range(number_of_ants):
+        for ant in range(NUMBER_OF_ANTS):
             print(f"Ant {ant}")
-            path, path_length = build_path(start_node, goal_node, grid, pheromone_levels, alpha, beta)
+            path, path_length = build_path(start_node, goal_node, grid, pheromone_levels, ALPHA, BETA)
             paths.append(path)
             path_lengths.append(path_length)
 
@@ -28,7 +28,7 @@ def ant_colony(start_node, goal_node, grid):
                 best_path = path
                 best_path_length = path_length
 
-        update_pheromones(pheromone_levels, paths, path_lengths, decay_rate)
+        update_pheromones(pheromone_levels, paths, path_lengths, DECAY_RATE)
 
     bp = [(node.x, node.y) for node in best_path]
 

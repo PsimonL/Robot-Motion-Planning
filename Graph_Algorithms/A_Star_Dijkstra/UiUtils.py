@@ -73,8 +73,9 @@ from Graph_Algorithms.ConstVars import WIDTH, HEIGHT, WHITE, BLACK, ADJUST_VECTO
 #
 #     plt.show()
 
-def ui_runner(start_pt, goal_pt, grid, obstacles, room_coords, path):
+def ui_runner(start_pt, goal_pt, grid, obstacles, room_coords, path, algorithm_choice):
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption(algorithm_choice)
 
     running = True
     while running:

@@ -14,7 +14,6 @@ def a_star(start, goal):
     start.G = 0
     start.H = diagonal_distance((start.x, start.y), (goal.x, goal.y))
     start.F = start.G + start.H
-
     open_set.append(start)
 
     while open_set:
@@ -30,8 +29,6 @@ def a_star(start, goal):
                     break
                 path.append((current_node.x, current_node.y))
                 current_node = current_node.parent_ptr
-            print(len(open_set))
-            print(len(close_set))
             return path[::-1]
 
         open_set.remove(current_node)
@@ -43,6 +40,7 @@ def a_star(start, goal):
 
             tentative_g_score = current_node.G + diagonal_distance((current_node.x, current_node.y),
                                                                    (neighbor.x, neighbor.y))
+
             if neighbor not in open_set or tentative_g_score < neighbor.G:
                 neighbor.parent_ptr = current_node
                 neighbor.G = tentative_g_score
@@ -64,7 +62,7 @@ def dijkstra(start, goal):
     while open_set:
         current_node = open_set[0]
         for node in open_set:
-            if node.F < current_node.F or node.F == current_node.F and node.H < current_node.H:
+            if node.G < current_node.G:
                 current_node = node
 
         if current_node == goal:
@@ -74,8 +72,6 @@ def dijkstra(start, goal):
                     break
                 path.append((current_node.x, current_node.y))
                 current_node = current_node.parent_ptr
-            print(len(open_set))
-            print(len(close_set))
             return path[::-1]
 
         open_set.remove(current_node)

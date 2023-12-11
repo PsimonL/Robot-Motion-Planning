@@ -10,20 +10,19 @@ from UiUtils import ui_runner
 def main(algorithm_choice):
     start_time = time.time()
     print("Start")
-    # start_point = (300, 200)
-    # goal_point = (300, 500)
-    start_point = (50, 50)
-    goal_point = (550, 550)
+    start_point = (300, 50)
+    goal_point = (550, 160)
     # start_point = (100, 10)
     # goal_point = (500, 10)
 
-    room_coords = [(0, 0), (600, 0), (600, 600), (0, 600)]
-    # room_coords = [(0, 0), (350, 0), (350, 150), (600, 150), (600, 600), (0, 600)]
+    # room_coords = [(0, 0), (600, 0), (600, 600), (0, 600)]
+    room_coords = [(0, 0), (350, 0), (350, 150), (600, 150), (600, 600), (0, 600)]
 
     # obstacles_coords = [[250, 300, 340, 50]]
     # obstacles_coords = [[1, 30, 550, 50], [50, 120, 549, 50], [1, 200, 100, 50]]
     # obstacles_coords = []
-    obstacles_coords = [[100, 1, 50, 350], [200, 100, 50, 499], [350, 1, 50, 500]]
+    obstacles_coords = [[200, 200, 100, 100]]
+    # obstacles_coords = [[100, 1, 50, 350], [200, 100, 50, 499], [350, 1, 50, 500]]
     obstacles = get_obstacles(obstacles_coords)
     print("obstacles  =  ", obstacles)
 
@@ -46,12 +45,9 @@ def main(algorithm_choice):
     for item in sorted_thrash_set:
         print("Thrash node: {}".format(item))
 
+    ret_path = None
     if start_node and goal_node:
-        # G = nx.Graph()
-        # ret_path = a_star(start_node, goal_node, algorithm_choice=algorithm_choice)
-        ret_path = a_star(start_node, goal_node)
-        # ret_path = dijkstra(start_node, goal_node)
-
+        ret_path = a_star(start_node, goal_node) if algorithm_choice == "A*" else dijkstra(start_node, goal_node) if algorithm_choice == "Dijkstra" else None
     else:
         raise Exception("Nodes don't found!")
 
@@ -65,12 +61,12 @@ def main(algorithm_choice):
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"Czas wykonania algorytmu: {execution_time} sekundy")
-    ui_runner(start_point, goal_point, grid, obstacles, room_coords, ret_path)
+    ui_runner(start_point, goal_point, grid, obstacles, room_coords, ret_path, algorithm_choice)
 
 
 if __name__ == "__main__":
     start_time = time.time()
-    algorithm_choice = True  # True - A*, False - Dijkstra
+    algorithm_choice = "A*"  # "Dijkstra"
     print("Start")
     main(algorithm_choice)
     end_time = time.time()
