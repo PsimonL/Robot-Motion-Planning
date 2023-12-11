@@ -7,12 +7,21 @@ import numpy as np
 from collections import deque
 from datetime import datetime
 import time
+import subprocess
 
 import environment
 
 
-def configure_pytorch(use_gpu):  # Tensorflow sets GPU automatically (even without Keras), Pytorch doesn't.
-    if use_gpu and torch.cuda.is_available():
+def configure_pytorch():  # Tensorflow sets GPU automatically (even without Keras), Pytorch doesn't.
+    print("PyTorch version:", torch.__version__)
+    print("Is PyTorch CUDA accessible:", torch.cuda.is_available())
+    if torch.cuda.is_available():
+        try:
+            result = subprocess.run(['nvcc', '--version'], capture_output=True, text=True, check=True)
+            nvcc_version = result.stdout.strip()
+        except subprocess.CalledProcessError as e:
+            nvcc_version = f"Error: {e}"
+        print(nvcc_version)
         print("GPU dostępne i skonfigurowane.")
     else:
         print("Nie znaleziono urządzenia GPU. Uczenie będzie odbywać się na CPU.")
@@ -36,11 +45,10 @@ class QNetwork(nn.Module):  # Predict future reward using regression for DQN age
 class DQNagent:
     def __init__(self):
         self.state_size = 5
-        self.action_size = 8   # możliwe akcje, czyli ruchy, 8 możliwych
+        self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 100
-        self.no_episodes = 30
+        self.no_episodes = 10_000
         self.max_memory = 50_000
-        self.trial_points_memory = []
         self.output_dir = "agent_output/"
         self.memory = deque(maxlen=self.max_memory)
         self.gamma = 0.95
@@ -52,6 +60,7 @@ class DQNagent:
         self.reward_per_episode = 0
         self.accumulative_reward = 0
         self.steps_per_episode = 0
+        self.successful_paths = []
         self.q_network = QNetwork(self.state_size, self.action_size)
         self.optimizer = optim.Adam(self.q_network.parameters(), lr=self.learning_rate)
 
@@ -86,7 +95,8 @@ class DQNagent:
             Q_values = self.q_network(state_tensor)
             Q_action = Q_values[0][action]
 
-            Q_target = reward + (1 - done) * self.gamma * torch.max(self.q_network(next_state_tensor))   # Bellman Equation
+            Q_target = reward + (1 - done) * self.gamma * torch.max(
+                self.q_network(next_state_tensor))  # Bellman Equation
             loss = criterion(Q_action, Q_target)
 
             self.optimizer.zero_grad()
@@ -97,11 +107,6 @@ class DQNagent:
 
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
-
-    def find_shortest_path(self):
-        if not self.trial_points_memory:
-            return None
-        return min(self.trial_points_memory, key=len)
 
     def load(self, name, should_load, agent):
         if should_load:
@@ -121,8 +126,23 @@ class DQNagent:
     def save(self, name):
         torch.save(self.q_network.state_dict(), f"{name}")
 
+    def find_shortest_path(self, file_path="agent_output/successful_paths.txt"):
+        if not self.successful_paths:
+            print("Number of successful paths is 0.")
+            return None
 
-def driver():
+        shortest_path = min(self.successful_paths, key=len)
+
+        with open(file_path, "w") as file:
+            for path in self.successful_paths:
+                path_str = ",".join([f"({point[0]}, {point[1]})" for point in path])
+                file.write(path_str + "\n")
+
+        return shortest_path
+
+
+
+def agent_driver():
     # initialize agent and env
     agent = DQNagent()
     agent.load(name=None, should_load=False, agent=agent)
@@ -155,41 +175,42 @@ def driver():
 
         # Episode lasts until done returns True flag and penalty is given or if aim is reached
         while True:
-            # get current step
+            # Get current step
             old_state = env.get_states()
-            # choose action
+            # Choose action
             action = agent.get_action(old_state)
             print("action = ", action)
-            # perform action
+            # Perform action
             reward, done, episode_finished, trial_points = env.do_step(action)
-            agent.trial_points_memory.append(trial_points)
 
             agent.steps_per_episode += 1
 
             if episode_finished:
+                print("AIM ACHIEVED!")
+                agent.successful_paths.append(trial_points)
                 no_finished_games_file.write(f"episode - {episode}/{agent.no_episodes}, STATUS: AIM REACHED\n")
 
             agent.reward_per_episode += reward
-            # get new state after action
+            # Get new state after action
             new_state = env.get_states()
-            # reshape to fit TensorFlow model input
+            # Reshape to fit TensorFlow model input
             new_state = np.reshape(new_state, [1, agent.state_size])
             old_state = np.reshape(old_state, [1, agent.state_size])
-            # remember feedback to train deep neural network
+            # Remember feedback to train deep neural network
             agent.remember(old_state, action, reward, new_state, done)
-            # use short memory to train
+            # Use short memory to train
             agent.train_short_memory(old_state, action, reward, new_state, done)
 
             if done:
-                # use long memory to train
+                # Use long memory to train
                 agent.train_long_memory()
                 steps_per_episode_file.write(
                     f"episode - {episode}/{agent.no_episodes}, "f"steps_per_episode = {agent.steps_per_episode}\n")
                 loss_values_file.write(f"episode - {episode}/{agent.no_episodes}, loss = {agent.loss}\n")
                 epsilon_values_file.write(f"episode - {episode}/{agent.no_episodes}, "f"epsilon = {agent.epsilon}\n")
-                # reset env
+                # Reset env
                 env.reset_env()
-                # break and take another episode
+                # Break and take another episode
                 break
 
             if agent.no_episodes % 50 == 0:
@@ -215,11 +236,14 @@ def driver():
     print(f"shortest_path = {shortest_path}")
 
 
-if __name__ == "__main__":  # lookforward
+if __name__ == "__main__":  # lookforward, look-ahead verification
     start_time = time.time()
     print("Start")
-    configure_pytorch(use_gpu=False)
-    driver()
+    configure_pytorch()
+    agent_driver()
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"Czas wykonania: {execution_time} sekundy")  # Czas wykonania 100 epizodów: 12.388508558273315 sekundy
+    print(f"Czas wykonania: {execution_time} sekundy")
+
+    # https://www.google.com/search?q=look+forward+technique+for+obstacle+avoidance&client=firefox-b-d&sca_esv=589414700&sxsrf=AM9HkKkkO0n3O0vadDYglnszchUmv0zqXA%3A1702143845399&ei=Zad0ZZD5F6TOxc8P5rmJiAc&udm=&oq=look+forward+technique+for+obstacle+avoid&gs_lp=Egxnd3Mtd2l6LXNlcnAiKWxvb2sgZm9yd2FyZCB0ZWNobmlxdWUgZm9yIG9ic3RhY2xlIGF2b2lkKgIIADIFECEYoAEyBRAhGKABMgUQIRigATIFECEYoAFI7lhQ2wNYtlBwAngBkAECmAH1BqABh02qAQ4wLjIxLjUuNS4xLjMuMrgBA8gBAPgBAcICBxAjGLADGCfCAgoQABhHGNYEGLADwgIEECMYJ8ICBhAAGBYYHsICCBAAGBYYHhgPwgIFEAAYgATCAggQABiABBjLAcICChAAGIAEGEYY_wHCAhYQABiABBhGGP8BGJcFGIwFGN0E2AEBwgISEAAYgAQYDRixAxiDARhGGP8BwgIHEAAYgAQYDcICHhAAGIAEGA0YsQMYgwEYRhj_ARiXBRiMBRjdBNgBAcICChAAGBYYHhgPGArCAgcQIRigARgKwgIIECEYFhgeGB3CAgoQIRgWGB4YDxgdwgIEECEYCuIDBBgAIEGIBgGQBgq6BgYIARABGBM&sclient=gws-wiz-serp
+    # https://www.researchgate.net/publication/2454908_VFH_Local_Obstacle_Avoidance_with_Look-Ahead_Verification
