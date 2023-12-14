@@ -119,7 +119,7 @@ def histogram_for_reached_aims(file_name, plot_title, ox_name, oy_name, no_episo
 
 if __name__ == "__main__":
     episode_plots_for_various_metrics(
-        file_name="agent_output/10_000 episodes 89%/accumulative_reward_values.txt",
+        file_name="agent_output/accumulative_reward_values.txt",
         plot_title="Accumulative Reward Progress",
         ox_name="Episode",
         oy_name="Accumulative Reward",
