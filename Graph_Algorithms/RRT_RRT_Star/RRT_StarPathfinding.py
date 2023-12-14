@@ -45,10 +45,10 @@ def rrt_star_algorithm(start, goal, obstacles_coords, max_iterations=MAX_ITERATI
     path = []
     for node in tree:
         if euclidean_distance(node, goal) < EXPANSION_DISTANCE:
-            path = [goal]
+            path = [(goal.x, goal.y)]
             current = node
             while current.parent:
-                path.append(current.parent)
+                path.append((current.parent.x, current.parent.y))
                 current = current.parent
             return path[::-1], tree
 
