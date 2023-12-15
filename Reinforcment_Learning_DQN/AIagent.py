@@ -44,7 +44,7 @@ class QNetwork(nn.Module):  # Predict future reward using regression for DQN age
 
 class DQNagent:
     def __init__(self):
-        self.state_size = 5
+        self.state_size = 11
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 100
         self.no_episodes = 1000

@@ -118,13 +118,13 @@ def histogram_for_reached_aims(file_name, plot_title, ox_name, oy_name, no_episo
 
 
 if __name__ == "__main__":
-    episode_plots_for_various_metrics(
-        file_name="agent_output/accumulative_reward_values.txt",
-        plot_title="Accumulative Reward Progress",
-        ox_name="Episode",
-        oy_name="Accumulative Reward",
-        oy_value="reward"
-    )
+    # episode_plots_for_various_metrics(
+    #     file_name="agent_output/accumulative_reward_values.txt",
+    #     plot_title="Accumulative Reward Progress",
+    #     ox_name="Episode",
+    #     oy_name="Accumulative Reward",
+    #     oy_value="reward"
+    # )
 
     # episode_plots_for_various_metrics(
     #     file_name="agent_output/reward_values_per_episode_file.txt",
@@ -134,13 +134,13 @@ if __name__ == "__main__":
     #     oy_value="reward"
     # )
 
-    episode_plots_for_various_metrics(
-        file_name="agent_output/epsilon_values.txt",
-        plot_title="Epsilon drop",
-        ox_name="Episode",
-        oy_name="Epsilon",
-        oy_value="epsilon"
-    )
+    # episode_plots_for_various_metrics(
+    #     file_name="agent_output/epsilon_values.txt",
+    #     plot_title="Epsilon drop",
+    #     ox_name="Episode",
+    #     oy_name="Epsilon",
+    #     oy_value="epsilon"
+    # )
 
     # steps_per_episode(
     #     file_name="agent_output/steps_per_episode_file.txt",
@@ -162,5 +162,5 @@ if __name__ == "__main__":
         plot_title="Rozkład liczby zadań ukończonych co 100 epizodów",
         ox_name="Epizody",
         oy_name="Liczba zadań ukończonych",
-        no_episodes=10000
+        no_episodes=1000
     )

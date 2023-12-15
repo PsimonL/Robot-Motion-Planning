@@ -29,7 +29,7 @@ class RobotSimulation:
         self.GREEN = (0, 255, 0)
         self.ORANGE = (255, 165, 0)
         self.finish_x = 400
-        self.finish_y = 400
+        self.finish_y = 200
         self.start_x = 200
         self.start_y = 200
         self.time_penalty_margin = None
@@ -72,7 +72,7 @@ class RobotSimulation:
         self.room = Polygon(self.room_coords)
 
         self.obstacles = [
-            # shapes.Obstacle(300, 150, 10, 400),
+            shapes.Obstacle(300, 175, 10, 400),
             # shapes.Obstacle(400, 300, 50, 100)
         ]
 
@@ -94,24 +94,23 @@ class RobotSimulation:
         if self.robot.y == self.finish_y:
             self.flag_y = 2
 
-    def get_states(self) -> np.array:
-        # print(f"GET_STATES() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
-        return np.array([
-            self.robot.x, self.robot.y,
-            self.current_distance_to_finish,
-            self.flag_x, self.flag_y
-        ])
-
     # def get_states(self) -> np.array:
     #     # print(f"GET_STATES() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
     #     return np.array([
     #         self.robot.x, self.robot.y,
     #         self.current_distance_to_finish,
-    #         self.look_forward_flags[0], self.look_forward_flags[1],
-    #         self.look_forward_flags[2], self.look_forward_flags[3],
-    #         self.look_forward_flags[4], self.look_forward_flags[5],
-    #         self.look_forward_flags[6], self.look_forward_flags[7]
     #     ])
+
+    def get_states(self) -> np.array:
+        # print(f"GET_STATES() self.robot.x, self.robot.y = ({self.robot.x}, {self.robot.y})")
+        return np.array([
+            self.robot.x, self.robot.y,
+            self.current_distance_to_finish,
+            self.look_forward_flags[0], self.look_forward_flags[1],
+            self.look_forward_flags[2], self.look_forward_flags[3],
+            self.look_forward_flags[4], self.look_forward_flags[5],
+            self.look_forward_flags[6], self.look_forward_flags[7]
+        ])
 
     def will_collision_occur(self, direction):
         # Oblicz nowe położenie robota na podstawie kierunku ruchu
@@ -240,7 +239,7 @@ class RobotSimulation:
     def do_step(self, action: int) -> Tuple[int, bool, bool, list]:
         self.step_iterator += 1
 
-        # self.update_look_forward_flags()
+        self.update_look_forward_flags()
 
         if self.shouldVisualize:
             for event in pygame.event.get():
@@ -281,13 +280,13 @@ class RobotSimulation:
         # self.reward += distance_difference
         self.previous_distance_to_finish = self.current_distance_to_finish
 
-        # # obstacle collision penalty
-        # for obstacle in self.obstacles:
-        #     if geometry.check_collision(self.robot, obstacle.rect):
-        #         print("COLLISION!")
-        #         self.reward -= 2000
-        #         reset_flag = True
-        #         return self.reward, reset_flag, game_finished, self.trail_points
+        # obstacle collision penalty
+        for obstacle in self.obstacles:
+            if geometry.check_collision(self.robot, obstacle.rect):
+                print("COLLISION!")
+                self.reward -= 100
+                reset_flag = True
+                return self.reward, reset_flag, game_finished, self.trail_points
 
         # room wall penalty
         current_coords = Point(self.robot.x, self.robot.y)
