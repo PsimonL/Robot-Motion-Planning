@@ -127,7 +127,7 @@ def histogram_for_reached_aims(file_name, plot_title, ox_name, oy_name, no_episo
 
 if __name__ == "__main__":
     episode_plots_for_various_metrics(
-        file_name="agent_output/10_000 episodes 73%/accumulative_reward_values.txt",
+        file_name="agent_output/obstacles_set2/accumulative_reward_values.txt",
         plot_title="Accumulative Reward Progress",
         ox_name="Episode",
         oy_name="Accumulative Reward",
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     # )
 
     episode_plots_for_various_metrics(
-        file_name="agent_output/10_000 episodes 73%/epsilon_values.txt",
+        file_name="agent_output/obstacles_set2/epsilon_values.txt",
         plot_title="Epsilon drop",
         ox_name="Episode",
         oy_name="Epsilon",
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     # )
 
     histogram_for_reached_aims(
-        file_name="agent_output/10_000 episodes 73%/no_finished_games_file.txt",
+        file_name="agent_output/obstacles_set2/no_finished_games_file.txt",
         plot_title="Rozkład liczby zadań ukończonych co 100 epizodów",
         ox_name="Epizody",
         oy_name="Liczba zadań ukończonych",
