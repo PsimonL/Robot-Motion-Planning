@@ -174,6 +174,7 @@ def agent_driver():
 
         # Episode lasts until done returns True flag and penalty is given or if aim is reached
         while True:
+            env.reset_flags()
             # Get current step
             old_state = env.get_states()
             # Choose action
@@ -234,6 +235,7 @@ def agent_driver():
 
     shortest_path = agent.find_shortest_path()
     print(f"shortest_path = {shortest_path}")
+    print(f"close_enough flag = {env.close_enough}")
 
 
 if __name__ == "__main__":  # lookforward, look-ahead verification

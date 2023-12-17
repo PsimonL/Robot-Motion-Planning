@@ -9,8 +9,6 @@ from shapely.geometry.polygon import Polygon
 from numba import cuda, jit
 
 
-
-
 class RobotSimulation:
     def __init__(self):
         self.shouldVisualize = True
@@ -20,7 +18,7 @@ class RobotSimulation:
         self.SCREEN_HEIGHT = self.size
         self.ADJUST_VECTOR = (self.size - self.inner_size) // 2
 
-        self.FPS = 40
+        self.FPS = 20  # 40
 
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
@@ -38,7 +36,7 @@ class RobotSimulation:
         self.trail_points, self.robot, self.obstacles, self.room_coords = None, None, None, None
 
         self.flag_x, self.flag_y = None, None
-
+        self.close_enough = 0
         self.room = None
         self.look_forward_flags = [0] * 8
 
@@ -56,7 +54,6 @@ class RobotSimulation:
     def reset_env(self):
         # print("RESET ENV CALL")
         self.step_iterator = 0
-
 
         self.reward = 0
         self.time_penalty_margin = 15
@@ -146,41 +143,42 @@ class RobotSimulation:
 
         return False  # Brak zderzenia
 
-    def update_look_forward_flags(self):
+    def reset_flags(self):
         self.look_forward_flags = [0] * 8  # Zerowanie flag przed aktualizacją
 
+    def update_look_forward_flags(self):
         left_LF = self.will_collision_occur('left')
         if left_LF:
             self.look_forward_flags[0] = 1  # Lewo
-            self.reward -= 10
+            self.reward -= 100
         right_LF = self.will_collision_occur('right')
         if right_LF:
             self.look_forward_flags[1] = 1  # Prawo
-            self.reward -= 10
+            self.reward -= 100
         up_LF = self.will_collision_occur('up')
         if up_LF:
             self.look_forward_flags[2] = 1  # Góra
-            self.reward -= 10
+            self.reward -= 100
         down_LF = self.will_collision_occur('down')
         if down_LF:
             self.look_forward_flags[3] = 1  # Dół
-            self.reward -= 10
+            self.reward -= 100
         up_left_LF = self.will_collision_occur('up_left')
         if up_left_LF:
             self.look_forward_flags[4] = 1  # Góra-Lewo
-            self.reward -= 10
+            self.reward -= 100
         up_right_LF = self.will_collision_occur('up_right')
         if up_right_LF:
             self.look_forward_flags[5] = 1  # Góra-Prawo
-            self.reward -= 10
+            self.reward -= 100
         down_left_LF = self.will_collision_occur('down_left')
         if down_left_LF:
             self.look_forward_flags[6] = 1  # Dół-Lewo
-            self.reward -= 10
+            self.reward -= 100
         down_right_LF = self.will_collision_occur('down_right')
         if down_right_LF:
             self.look_forward_flags[7] = 1  # Dół-Prawo
-            self.reward -= 10
+            self.reward -= 100
 
     def move_robot(self, action):
         dx, dy = 0, 0
@@ -270,6 +268,8 @@ class RobotSimulation:
         # if robot getting closer
         print("self.previous_distance_to_finish = ", self.previous_distance_to_finish)
         print("self.current_distance_to_finish = ", self.current_distance_to_finish)
+        if self.current_distance_to_finish < 30:
+            self.close_enough += 1
         distance_difference = self.previous_distance_to_finish - self.current_distance_to_finish
         if distance_difference < 0:  # bad
             self.reward -= 10
@@ -284,7 +284,7 @@ class RobotSimulation:
         for obstacle in self.obstacles:
             if geometry.check_collision(self.robot, obstacle.rect):
                 print("COLLISION!")
-                self.reward -= 100
+                self.reward -= 10
                 reset_flag = True
                 return self.reward, reset_flag, game_finished, self.trail_points
 
