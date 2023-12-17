@@ -47,7 +47,7 @@ class DQNagent:
         self.state_size = 11
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 100
-        self.no_episodes = 1000
+        self.no_episodes = 10_000
         self.max_memory = 50_000
         self.output_dir = "agent_output/"
         self.memory = deque(maxlen=self.max_memory)
