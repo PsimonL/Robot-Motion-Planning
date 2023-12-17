@@ -3,8 +3,9 @@ import pygame
 from Graph_Algorithms.ConstVars import WIDTH, HEIGHT, WHITE, BLACK, ADJUST_VECTOR, NODE_SIZE, BLUE, YELLOW, GREEN, RED, INNER_HEIGHT, \
     INNER_WIDTH, ORANGE
 
-def rrt_ui_runner(start_pt, goal_pt, obstacles, room_coords, path, rrt_tree):
+def rrt_ui_runner(start_pt, goal_pt, obstacles, room_coords, path, rrt_tree, algorithm_choice):
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption(algorithm_choice)
 
     running = True
     while running:
@@ -24,7 +25,7 @@ def rrt_ui_runner(start_pt, goal_pt, obstacles, room_coords, path, rrt_tree):
         pygame.draw.circle(screen, YELLOW, (start_pt[0] + ADJUST_VECTOR, start_pt[1] + ADJUST_VECTOR), NODE_SIZE * 8)
         pygame.draw.circle(screen, GREEN, (goal_pt[0] + ADJUST_VECTOR, goal_pt[1] + ADJUST_VECTOR), NODE_SIZE * 8)
 
-        pygame.draw.circle(screen, RED, (INNER_WIDTH + ADJUST_VECTOR, INNER_HEIGHT + ADJUST_VECTOR), NODE_SIZE * 10)
+        # pygame.draw.circle(screen, RED, (INNER_WIDTH + ADJUST_VECTOR, INNER_HEIGHT + ADJUST_VECTOR), NODE_SIZE * 10)
 
         for node in rrt_tree:
             pygame.draw.circle(screen, WHITE, (int(node.x + ADJUST_VECTOR), int(node.y + ADJUST_VECTOR)), NODE_SIZE)
@@ -36,7 +37,7 @@ def rrt_ui_runner(start_pt, goal_pt, obstacles, room_coords, path, rrt_tree):
                                  NODE_SIZE // 2)
 
         if path:
-            adjusted_path = [(node.x + ADJUST_VECTOR, node.y + ADJUST_VECTOR) for node in path]
+            adjusted_path = [(node[0] + ADJUST_VECTOR, node[1] + ADJUST_VECTOR) for node in path]
             for i in range(1, len(adjusted_path)):
                 pygame.draw.line(screen, RED, adjusted_path[i - 1], adjusted_path[i], NODE_SIZE * 4)
 

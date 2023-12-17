@@ -1,7 +1,10 @@
 from PheromoneUtils import initialize_pheromones, build_path, update_pheromones
 
-NUMBER_OF_ANTS = 20
-NUMBER_OF_ITERATIONS = 200
+# NUMBER_OF_ANTS = 10
+# NUMBER_OF_ITERATIONS = 1000
+NUMBER_OF_ANTS = 10
+NUMBER_OF_ITERATIONS = 2
+
 DECAY_RATE = 0.1
 ALPHA = 1
 BETA = 5

@@ -1,4 +1,4 @@
-from Graph_Algorithms.DistanceUtils import diagonal_distance, heuristic
+from Graph_Algorithms.DistanceUtils import diagonal_distance
 import networkx as nx
 from math import sqrt
 

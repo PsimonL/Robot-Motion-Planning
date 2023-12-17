@@ -20,9 +20,8 @@ def new_point(start, end, max_distance):
 
 def rrt_algorithm(start, goal, obstacles_coords):
     tree = [start]
-
     for i in range(MAX_ITERATIONS):
-        print(i)
+        # print(i)
         random_point = get_random_point()
         nearest = nearest_node(tree, random_point)
         new_node = new_point(nearest, random_point, EXPANSION_DISTANCE)
@@ -32,11 +31,12 @@ def rrt_algorithm(start, goal, obstacles_coords):
             tree.append(new_node)
 
             if euclidean_distance(new_node, goal) < EXPANSION_DISTANCE:
-                path = [goal]
+                path = [(goal.x, goal.y)]
                 current = new_node
                 while current.parent:
-                    path.append(current.parent)
+                    path.append((current.parent.x, current.parent.y))
                     current = current.parent
+                print("Last iteration = ", i)
                 return path[::-1], tree
 
     return None, tree

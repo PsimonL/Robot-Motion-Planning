@@ -44,10 +44,10 @@ class QNetwork(nn.Module):  # Predict future reward using regression for DQN age
 
 class DQNagent:
     def __init__(self):
-        self.state_size = 5
+        self.state_size = 11
         self.action_size = 8  # możliwe akcje, czyli ruchy, 8 możliwych
         self.batch_size = 100
-        self.no_episodes = 10_000
+        self.no_episodes = 1000
         self.max_memory = 50_000
         self.output_dir = "agent_output/"
         self.memory = deque(maxlen=self.max_memory)
@@ -70,6 +70,7 @@ class DQNagent:
     def get_action(self, state):  # Based on epsilon explore randomly or exploit current data.
         if np.random.rand() <= self.epsilon:  # Exploration mode.
             return random.randrange(self.action_size)
+            # return random.randint(1, self.action_size)
         state_tensor = torch.from_numpy(state).float()
         action_values = self.q_network(state_tensor)  # Exploit, over epsilon decay, more exploration.
         return np.argmax(action_values.detach().numpy())
@@ -132,12 +133,10 @@ class DQNagent:
             return None
 
         shortest_path = min(self.successful_paths, key=len)
-
-        with open(file_path, "w") as file:
-            for path in self.successful_paths:
-                path_str = ",".join([f"({point[0]}, {point[1]})" for point in path])
-                file.write(path_str + "\n")
-
+        successful_paths_file = open(file_path, "w")
+        for i in range(len(self.successful_paths)):
+            successful_paths_file.write(f"{i} - {self.successful_paths[i]}\n")
+        successful_paths_file.close()
         return shortest_path
 
 
@@ -175,11 +174,13 @@ def agent_driver():
 
         # Episode lasts until done returns True flag and penalty is given or if aim is reached
         while True:
+            env.reset_flags()
             # Get current step
             old_state = env.get_states()
             # Choose action
             action = agent.get_action(old_state)
             print("action = ", action)
+
             # Perform action
             reward, done, episode_finished, trial_points = env.do_step(action)
 
@@ -234,6 +235,7 @@ def agent_driver():
 
     shortest_path = agent.find_shortest_path()
     print(f"shortest_path = {shortest_path}")
+    print(f"close_enough flag = {env.close_enough}")
 
 
 if __name__ == "__main__":  # lookforward, look-ahead verification

@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import re
+import numpy as np
+from scipy.stats import linregress
 
 
 def episode_plots_for_various_metrics(file_name, plot_title, ox_name, oy_name, oy_value):
@@ -111,6 +113,12 @@ def histogram_for_reached_aims(file_name, plot_title, ox_name, oy_name, no_episo
         bins = range(0, no_episodes + 101, 100)
         plt.hist(completed_episodes, bins=bins, edgecolor='black', alpha=0.7)
 
+        # x = np.array(data)[:, 0]
+        # y = np.array(data)[:, 1]
+        # slope, intercept, _, _, _ = linregress(x, y)
+        # line = slope * x + intercept
+        # plt.plot(x, line, color='red', label='Regresja liniowa')
+
         plt.title(plot_title)
         plt.xlabel(ox_name)
         plt.ylabel(oy_name)
@@ -119,7 +127,7 @@ def histogram_for_reached_aims(file_name, plot_title, ox_name, oy_name, no_episo
 
 if __name__ == "__main__":
     episode_plots_for_various_metrics(
-        file_name="agent_output/10_000 episodes 89%/accumulative_reward_values.txt",
+        file_name="agent_output/10_000 episodes 73%/accumulative_reward_values.txt",
         plot_title="Accumulative Reward Progress",
         ox_name="Episode",
         oy_name="Accumulative Reward",
@@ -135,7 +143,7 @@ if __name__ == "__main__":
     # )
 
     episode_plots_for_various_metrics(
-        file_name="agent_output/epsilon_values.txt",
+        file_name="agent_output/10_000 episodes 73%/epsilon_values.txt",
         plot_title="Epsilon drop",
         ox_name="Episode",
         oy_name="Epsilon",
@@ -158,7 +166,7 @@ if __name__ == "__main__":
     # )
 
     histogram_for_reached_aims(
-        file_name="agent_output/no_finished_games_file.txt",
+        file_name="agent_output/10_000 episodes 73%/no_finished_games_file.txt",
         plot_title="Rozkład liczby zadań ukończonych co 100 epizodów",
         ox_name="Epizody",
         oy_name="Liczba zadań ukończonych",
