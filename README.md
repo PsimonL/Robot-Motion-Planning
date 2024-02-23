@@ -16,3 +16,4 @@ Project is related to: https://github.com/Pyother/AreaExplorer
 
 https://onlinelibrary.wiley.com/doi/full/10.1002/eng2.12132  
 https://bibliotekanauki.pl/articles/115546.pdf  
+https://github.com/patrickloeber
