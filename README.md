@@ -16,4 +16,12 @@ Project is related to: https://github.com/Pyother/AreaExplorer
 
 https://onlinelibrary.wiley.com/doi/full/10.1002/eng2.12132  
 https://bibliotekanauki.pl/articles/115546.pdf  
-https://github.com/patrickloeber
+https://github.com/patrickloeber/snake-ai-pytorch
+https://github.com/jonkrohn/TensorFlow-LiveLessons/blob/master/notebooks/cartpole_dqn.ipynb
+https://pythonprogramming.net/training-deep-q-learning-dqn-reinforcement-learning-python-tutorial/
+https://www.youtube.com/watch?v=L8ypSXwyBds&t=4497s
+https://www.youtube.com/watch?v=L_4BPjLBF4E&t=422s
+https://www.youtube.com/watch?v=wa0EmEq5Otw
+https://www.youtube.com/watch?v=bZ5G-RZoE6Q
+https://www.youtube.com/watch?v=-lcWV4wkHsk&t=1042s
+https://www.mathworks.com/discovery/slam.html
